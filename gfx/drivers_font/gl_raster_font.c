@@ -35,6 +35,8 @@
 
 #define MAX_MSG_LEN_CHUNK 64
 
+#define ONEMASK ((size_t)(-1) / 0xFF)
+
 static uint8_t gl_strlen(const char **string);
 
 typedef struct
@@ -254,16 +256,18 @@ static void gl_raster_font_draw_vertices(gl_t *gl, const video_coords_t *coords)
    glDrawArrays(GL_TRIANGLES, 0, coords->vertices);
 }
 
+#ifndef HAVE_UTF8
 static uint8_t gl_strlen_byte(const char **string)
 {
    return strlen(*string);
 }
+#endif
 
 #ifdef HAVE_UTF8
 static uint32_t gl_get_char_index_utf8(const char **string, unsigned index, unsigned *char_len)
 {
    uint8_t first = (*string)[index];
-   printf("length of %s is %d\n", *string, strlen(*string));
+   printf("length of %s is %lu\n", *string, strlen(*string));
    uint32_t ret = 0, char_index = index, len = 0;
    
    for(unsigned i = index; i < gl_strlen(string); ++i)
@@ -339,15 +343,66 @@ static uint32_t gl_get_codepoint_utf8(const char **str, unsigned index, unsigned
    return codepoint;
 }
 
-/* Does not validate the input, returns garbage if it's not UTF-8. */
 static uint32_t gl_strlen_utf8(const char **string)
 {
+/*
+   // FIXME: very slow
    unsigned i = 0, j = 0;
    while ((*string)[i]) {
      if (((*string)[i] & 0xc0) != 0x80) j++;
      i++;
    }
    return j;
+*/
+  const char * _s = *string;
+  const char * s;
+  size_t count = 0;
+  size_t u;
+  unsigned char b;
+
+  /* Handle any initial misaligned bytes. */
+  for (s = _s; (uintptr_t)(s) & (sizeof(size_t) - 1); s++) {
+    b = *s;
+
+    /* Exit if we hit a zero byte. */
+    if (b == '\0')
+      goto done;
+
+    /* Is this byte NOT the first byte of a character? */
+    count += (b >> 7) & ((~b) >> 6);
+  }
+
+  /* Handle complete blocks. */
+  for (; ; s += sizeof(size_t)) {
+    /* Prefetch 256 bytes ahead. */
+    __builtin_prefetch(&s[256], 0, 0);
+
+    /* Grab 4 or 8 bytes of UTF-8 data. */
+    u = *(size_t *)(s);
+
+    /* Exit the loop if there are any zero bytes. */
+    if ((u - ONEMASK) & (~u) & (ONEMASK * 0x80))
+      break;
+
+    /* Count bytes which are NOT the first byte of a character. */
+    u = ((u & (ONEMASK * 0x80)) >> 7) & ((~u) >> 6);
+    count += (u * ONEMASK) >> ((sizeof(size_t) - 1) * 8);
+  }
+
+  /* Take care of any left-over bytes. */
+  for (; ; s++) {
+    b = *s;
+
+    /* Exit if we hit a zero byte. */
+    if (b == '\0')
+      break;
+
+    /* Is this byte NOT the first byte of a character? */
+    count += (b >> 7) & ((~b) >> 6);
+  }
+
+done:
+  return ((s - _s) - count);
 }
 #endif
 
@@ -421,13 +476,12 @@ static void gl_raster_font_render_line(
          const struct font_glyph *glyph =
             font->font_driver->get_glyph(font->font_data, gl_get_codepoint(&msg, i, &skip));
 
+         if(skip)
+            i += skip;
          if (!glyph) /* Do something smarter here ... */
             glyph = font->font_driver->get_glyph(font->font_data, '?');
          if (!glyph)
             continue;
-
-         if(skip)
-            i += skip;
 
          off_x  = glyph->draw_offset_x;
          off_y  = glyph->draw_offset_y;
@@ -484,7 +538,7 @@ static void gl_raster_font_render_message(
    /* If the font height is not supported just draw as usual */
    if (!font->font_driver->get_line_height)
    {
-      gl_raster_font_render_line(font, msg, strlen(msg),
+      gl_raster_font_render_line(font, msg, gl_strlen(&msg),
             scale, color, pos_x, pos_y, text_align);
       return;
    }
@@ -508,7 +562,7 @@ static void gl_raster_font_render_message(
       }
       else
       {
-         unsigned msg_len = strlen(msg);
+         unsigned msg_len = gl_strlen(&msg);
          gl_raster_font_render_line(font, msg, msg_len, scale, color, pos_x,
                pos_y - (float)lines*line_height, text_align);
          break;
