@@ -27,8 +27,8 @@
 #include "../font_driver.h"
 #include "../../general.h"
 
-#define FT_ATLAS_ROWS 16
-#define FT_ATLAS_COLS 16
+#define FT_ATLAS_ROWS 84
+#define FT_ATLAS_COLS 84
 #define FT_ATLAS_SIZE (FT_ATLAS_ROWS * FT_ATLAS_COLS)
 
 typedef struct freetype_renderer
@@ -54,7 +54,8 @@ static const struct font_glyph *font_renderer_ft_get_glyph(
    ft_font_renderer_t *handle = (ft_font_renderer_t*)data;
    if (!handle)
       return NULL;
-   return code < FT_ATLAS_SIZE ? &handle->glyphs[code] : NULL;
+   //return code < FT_ATLAS_SIZE ? &handle->glyphs[code] : NULL;
+   return (code-12352) < FT_ATLAS_SIZE ? &handle->glyphs[code-12352] : NULL;
 }
 
 static void font_renderer_ft_free(void *data)
@@ -91,7 +92,7 @@ static bool font_renderer_create_atlas(ft_font_renderer_t *handle)
       if (!glyph)
          continue;
 
-      if (FT_Load_Char(handle->face, i, FT_LOAD_RENDER))
+      if (FT_Load_Char(handle->face, i + 12352, FT_LOAD_RENDER))
       {
          ret = false;
          goto end;

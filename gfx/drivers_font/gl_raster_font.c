@@ -256,104 +256,37 @@ static void gl_raster_font_draw_vertices(gl_t *gl, const video_coords_t *coords)
    glDrawArrays(GL_TRIANGLES, 0, coords->vertices);
 }
 
-#ifndef HAVE_UTF8
-static uint8_t gl_strlen_byte(const char **string)
+static uint8_t string_walkbyte(const char **string)
 {
-   return strlen(*string);
+   return *((*string)++);
 }
-#endif
 
 #ifdef HAVE_UTF8
-static uint32_t gl_get_char_index_utf8(const char **string, unsigned index, unsigned *char_len)
+/* Does not validate the input, returns garbage if it's not UTF-8. */
+static uint32_t string_walk(const char **string)
 {
-   uint8_t first = (*string)[index];
-   printf("length of %s is %lu\n", *string, strlen(*string));
-   uint32_t ret = 0, char_index = index, len = 0;
+   uint8_t first = string_walkbyte(string);
+   uint32_t ret;
    
-   for(unsigned i = index; i < gl_strlen(string); ++i)
-   {
-      if (first<128)
-      {
-         len = 1;
-
-         if (char_len)
-            *char_len = len;
-
-         return i;
-      }
-
-      if (first >= 0xE0)
-      {
-         i += 2;
-         len = 3;
-      } else if (first >= 0xF0) {
-         i += 3;
-         len = 4;
-      } else {
-         ++i;
-         len = 2;
-      }
-
-      printf("string %s index %d char_index %d i %d len %d\n", *string, index, char_index, i, len);
-
-      if (index == char_index)
-      {
-         if (char_len)
-            *char_len = len;
-
-         return i;
-      }
-
-      ++char_index;
-   }
-
-   return 0;
-}
-
-static uint32_t gl_get_codepoint_utf8(const char **str, unsigned index, unsigned *skip)
-{
-   unsigned char **string = (unsigned char**)str;
-   unsigned char_len = 0;
-   unsigned char_index = gl_get_char_index_utf8(str, index, &char_len);
-   uint32_t codepoint = 0;
-
-   if (skip)
-      *skip = char_len - 1;
-
-   char_index -= char_len - 1;
-
-   switch (char_len)
-   {
-      case 1:
-         codepoint = (uint8_t)((*string)[char_index]);
-         break;
-      case 2:
-         codepoint = ((*string)[char_index] << 8) | (*string)[char_index + 1];
-         break;
-      case 3:
-         codepoint = ((*string)[char_index] << 16) | ((*string)[char_index + 1] << 8) | (*string)[char_index + 2];
-         break;
-      case 4:
-         codepoint = ((*string)[char_index] << 24) | ((*string)[char_index + 1] << 16) | ((*string)[char_index + 2] << 8) | (*string)[char_index + 4];
-         break;
-   }
-
-   printf("codepoint for index %d char_len %d char_index %d of %s is %08X\n", index, char_len, char_index, *string, codepoint);
-
-   return codepoint;
+   if (first<128)
+      return first;
+   
+   ret = 0;
+   ret = (ret<<6) | (string_walkbyte(string)    & 0x3F);
+   if (first >= 0xE0)
+      ret = (ret<<6) | (string_walkbyte(string) & 0x3F);
+   if (first >= 0xF0)
+      ret = (ret<<6) | (string_walkbyte(string) & 0x3F);
+   
+   if (first >= 0xF0)
+      return ret | (first&31)<<18;
+   if (first >= 0xE0)
+      return ret | (first&15)<<12;
+   return ret | (first&7)<<6;
 }
 
 static uint32_t gl_strlen_utf8(const char **string)
 {
-/*
-   // FIXME: very slow
-   unsigned i = 0, j = 0;
-   while ((*string)[i]) {
-     if (((*string)[i] & 0xc0) != 0x80) j++;
-     i++;
-   }
-   return j;
-*/
   const char * _s = *string;
   const char * s;
   size_t count = 0;
@@ -404,25 +337,20 @@ static uint32_t gl_strlen_utf8(const char **string)
 done:
   return ((s - _s) - count);
 }
-#endif
 
 static uint8_t gl_strlen(const char **string)
 {
-#ifdef HAVE_UTF8
    return gl_strlen_utf8(string);
-#else
-  return gl_strlen_byte(string);
-#endif
 }
+#else
+#define string_walk string_walkbyte
+#define gl_strlen gl_strlen_byte
 
-static uint32_t gl_get_codepoint(const char **string, unsigned index, unsigned *skip)
+static uint8_t gl_strlen_byte(const char **string)
 {
-#ifdef HAVE_UTF8
-   return gl_get_codepoint_utf8(string, index, skip);
-#else
-   return (*string)[index];
-#endif
+   return strlen(*string);
 }
+#endif
 
 static void gl_raster_font_render_line(
       gl_raster_t *font, const char *msg, unsigned msg_len_full,
@@ -441,8 +369,6 @@ static void gl_raster_font_render_line(
 
    if (!gl)
       return;
-
-   printf("render line: %s\n", msg);
 
    msg_len        = MIN(msg_len_full, MAX_MSG_LEN_CHUNK);
 
@@ -468,16 +394,12 @@ static void gl_raster_font_render_line(
 
    while (msg_len_full)
    {
-      printf("full: %d len: %d msg: %s\n", msg_len_full, msg_len, msg);
       for (i = 0; i < msg_len; i++)
       {
          int off_x, off_y, tex_x, tex_y, width, height;
-         unsigned skip = 0;
          const struct font_glyph *glyph =
-            font->font_driver->get_glyph(font->font_data, gl_get_codepoint(&msg, i, &skip));
+            font->font_driver->get_glyph(font->font_data, string_walk(&msg));
 
-         if(skip)
-            i += skip;
          if (!glyph) /* Do something smarter here ... */
             glyph = font->font_driver->get_glyph(font->font_data, '?');
          if (!glyph)
