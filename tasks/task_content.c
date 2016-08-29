@@ -91,19 +91,20 @@
 #include "../core.h"
 #include "../verbosity.h"
 
-#ifdef HAVE_7ZIP
-#include "../deps/7zip/7z.h"
-#include "../deps/7zip/7zAlloc.h"
-#include "../deps/7zip/7zCrc.h"
-#include "../deps/7zip/7zFile.h"
-#endif
-
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.h"
 #endif
 
 #ifdef HAVE_CHEEVOS
 #include "../cheevos.h"
+#endif
+
+#ifdef HAVE_COMPRESSION
+
+#ifdef HAVE_7ZIP
+#include <file/archive_file_7zip.h>
+#endif
+
 #endif
 
 #define MAX_ARGS 32
@@ -123,86 +124,8 @@ static bool core_does_not_need_content                        = false;
 static uint32_t content_crc                                   = 0;
 
 #ifdef HAVE_COMPRESSION
-/**
- * filename_split_archive:
- * @str              : filename to turn into a string list
- *
- * Creates a new string list based on filename @path, delimited by a hash (#).
- *
- * Returns: new string list if successful, otherwise NULL.
- */
-static struct string_list *filename_split_archive(const char *path)
-{
-   union string_list_elem_attr attr;
-   struct string_list *list = string_list_new();
-   const char *delim        = NULL;
-
-   memset(&attr, 0, sizeof(attr));
-
-   delim = path_get_archive_delim(path);
-
-   if (delim)
-   {
-      /* add archive path to list first */
-      if (!string_list_append_n(list, path, delim - path, attr))
-         goto error;
-
-      /* now add the path within the archive */
-      delim++;
-
-      if (*delim)
-      {
-         if (!string_list_append(list, delim, attr))
-            goto error;
-      }
-   }
-   else
-      if (!string_list_append(list, path, attr))
-         goto error;
-
-   return list;
-
-error:
-   string_list_free(list);
-   return NULL;
-}
 
 #ifdef HAVE_7ZIP
-static bool utf16_to_char(uint8_t **utf_data,
-      size_t *dest_len, const uint16_t *in)
-{
-   unsigned len    = 0;
-
-   while (in[len] != '\0')
-      len++;
-
-   utf16_conv_utf8(NULL, dest_len, in, len);
-   *dest_len  += 1;
-   *utf_data   = (uint8_t*)malloc(*dest_len);
-   if (*utf_data == 0)
-      return false;
-
-   return utf16_conv_utf8(*utf_data, dest_len, in, len);
-}
-
-static bool utf16_to_char_string(const uint16_t *in, char *s, size_t len)
-{
-   size_t     dest_len  = 0;
-   uint8_t *utf16_data  = NULL;
-   bool            ret  = utf16_to_char(&utf16_data, &dest_len, in);
-
-   if (ret)
-   {
-      utf16_data[dest_len] = 0;
-      strlcpy(s, (const char*)utf16_data, len);
-   }
-
-   free(utf16_data);
-   utf16_data = NULL;
-
-   return ret;
-}
-
 /* Extract the relative path (needle) from a 7z archive 
  * (path) and allocate a buf for it to write it in.
  * If optional_outfile is set, extract to that instead 
@@ -354,130 +277,51 @@ static int content_7zip_file_read(
 
    return outsize;
 }
+#endif
 
-static struct string_list *compressed_7zip_file_list_new(
-      const char *path, const char* ext)
+/**
+ * filename_split_archive:
+ * @str              : filename to turn into a string list
+ *
+ * Creates a new string list based on filename @path, delimited by a hash (#).
+ *
+ * Returns: new string list if successful, otherwise NULL.
+ */
+static struct string_list *filename_split_archive(const char *path)
 {
-   CFileInStream archiveStream;
-   CLookToRead lookStream;
-   ISzAlloc allocImp;
-   ISzAlloc allocTempImp;
-   CSzArEx db;
-   size_t temp_size             = 0;
-   struct string_list     *list = NULL;
-   
-   /* These are the allocation routines - currently using 
-    * the non-standard 7zip choices. */
-   allocImp.Alloc     = SzAlloc;
-   allocImp.Free      = SzFree;
-   allocTempImp.Alloc = SzAllocTemp;
-   allocTempImp.Free  = SzFreeTemp;
+   union string_list_elem_attr attr;
+   struct string_list *list = string_list_new();
+   const char *delim        = NULL;
 
-   if (InFile_Open(&archiveStream.file, path))
+   memset(&attr, 0, sizeof(attr));
+
+   delim = path_get_archive_delim(path);
+
+   if (delim)
    {
-      RARCH_ERR("Could not open as 7zip archive: %s.\n",path);
-      return NULL;
-   }
+      /* add archive path to list first */
+      if (!string_list_append_n(list, path, delim - path, attr))
+         goto error;
 
-   list = string_list_new();
+      /* now add the path within the archive */
+      delim++;
 
-   if (!list)
-   {
-      File_Close(&archiveStream.file);
-      return NULL;
-   }
-
-   FileInStream_CreateVTable(&archiveStream);
-   LookToRead_CreateVTable(&lookStream, False);
-   lookStream.realStream = &archiveStream.s;
-   LookToRead_Init(&lookStream);
-   CrcGenerateTable();
-   SzArEx_Init(&db);
-
-   if (SzArEx_Open(&db, &lookStream.s, &allocImp, &allocTempImp) == SZ_OK)
-   {
-      uint32_t i;
-      struct string_list *ext_list = ext ? string_split(ext, "|"): NULL;
-      SRes res                     = SZ_OK;
-      uint16_t *temp               = NULL;
-
-      for (i = 0; i < db.db.NumFiles; i++)
+      if (*delim)
       {
-         union string_list_elem_attr attr;
-         char infile[PATH_MAX_LENGTH] = {0};
-         const char *file_ext         = NULL;
-         size_t                   len = 0;
-         bool supported_by_core       = false;
-         const CSzFileItem         *f = db.db.Files + i;
-
-         /* we skip over everything, which is a directory. */
-         if (f->IsDir)
-            continue;
-
-         len = SzArEx_GetFileNameUtf16(&db, i, NULL);
-
-         if (len > temp_size)
-         {
-            free(temp);
-            temp_size = len;
-            temp      = (uint16_t *)malloc(temp_size * sizeof(temp[0]));
-
-            if (temp == 0)
-            {
-               res = SZ_ERROR_MEM;
-               break;
-            }
-         }
-
-         SzArEx_GetFileNameUtf16(&db, i, temp);
-         res      = SZ_ERROR_FAIL;
-
-         if (temp)
-            res      = utf16_to_char_string(temp, infile, sizeof(infile)) 
-               ? SZ_OK : SZ_ERROR_FAIL;
-
-         file_ext = path_get_extension(infile);
-
-         if (string_list_find_elem_prefix(ext_list, ".", file_ext))
-            supported_by_core = true;
-
-         /*
-          * Currently we only support files without subdirs in the archives.
-          * Folders are not supported (differences between win and lin.
-          * Archives within archives should imho never be supported.
-          */
-
-         if (!supported_by_core)
-            continue;
-
-         attr.i = RARCH_COMPRESSED_FILE_IN_ARCHIVE;
-
-         if (!string_list_append(list, infile, attr))
-         {
-            res = SZ_ERROR_MEM;
-            break;
-         }
-      }
-
-      string_list_free(ext_list);
-      free(temp);
-
-      if (res != SZ_OK)
-      {
-         /* Error handling */
-         RARCH_ERR("Failed to open compressed_file: \"%s\"\n", path);
-
-         string_list_free(list);
-         list = NULL;
+         if (!string_list_append(list, delim, attr))
+            goto error;
       }
    }
-
-   SzArEx_Free(&db, &allocImp);
-   File_Close(&archiveStream.file);
+   else
+      if (!string_list_append(list, path, attr))
+         goto error;
 
    return list;
+
+error:
+   string_list_free(list);
+   return NULL;
 }
-#endif
 
 #ifdef HAVE_ZLIB
 struct decomp_state
@@ -651,9 +495,6 @@ static int content_zip_file_read(
 }
 #endif
 
-#endif
-
-#ifdef HAVE_COMPRESSION
 /* Generic compressed file loader.
  * Extracts to buf, unless optional_filename != 0
  * Then extracts to optional_filename and leaves buf alone.
@@ -1016,7 +857,7 @@ error:
 static bool read_content_file(unsigned i, const char *path, void **buf,
       ssize_t *length)
 {
-#ifdef HAVE_ZLIB
+#ifdef HAVE_COMPRESSION
    content_stream_t stream_info;
    uint32_t *content_crc_ptr = NULL;
 #endif
@@ -1038,7 +879,7 @@ static bool read_content_file(unsigned i, const char *path, void **buf,
    if (!global->patch.block_patch)
       patch_content(&ret_buf, length);
 
-#ifdef HAVE_ZLIB
+#ifdef HAVE_COMPRESSION
    content_get_crc(&content_crc_ptr);
 
    stream_info.a = 0;

@@ -101,6 +101,38 @@ struct string_list *string_list_new(void)
 }
 
 /**
+ * string_list_append_list:
+ * @dst              : pointer to destination string list
+ * @src              : pointer to source string list
+ *
+ * Appends each element of one string list into another string list.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
+bool string_list_append_list(struct string_list *dst, struct string_list *src)
+{
+   char *data_dup = NULL;
+
+   for (int i = 0; i < src->size; i++)
+   {
+      if (dst->size >= dst->cap &&
+            !string_list_capacity(dst, dst->cap * 2))
+         return false;
+
+      data_dup = strdup(src->elems[i].data);
+      if (!data_dup)
+         return false;
+
+      dst->elems[dst->size].data = data_dup;
+      dst->elems[dst->size].attr = src->elems[i].attr;
+
+      dst->size++;
+   }
+
+   return true;
+}
+
+/**
  * string_list_append:
  * @list             : pointer to string list
  * @elem             : element to add to the string list

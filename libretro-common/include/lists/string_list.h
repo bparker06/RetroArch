@@ -97,6 +97,17 @@ struct string_list *string_split(const char *str, const char *delim);
 struct string_list *string_list_new(void);
 
 /**
+ * string_list_append_list:
+ * @dst              : pointer to destination string list
+ * @src              : pointer to source string list
+ *
+ * Appends each element of one string list into another string list.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
+bool string_list_append_list(struct string_list *dst, struct string_list *src);
+
+/**
  * string_list_append:
  * @list             : pointer to string list
  * @elem             : element to add to the string list

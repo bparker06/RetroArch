@@ -32,6 +32,14 @@
 #include "config.h"
 #endif
 
+#ifdef HAVE_COMPRESSION
+
+#ifdef HAVE_7ZIP
+#include <file/archive_file_7zip.h>
+#endif
+
+#endif
+
 static const char *core_info_tmp_path               = NULL;
 static const struct string_list *core_info_tmp_list = NULL;
 static core_info_t *core_info_current               = NULL;
@@ -573,7 +581,7 @@ core_info_t *core_info_get(core_info_list_t *list, size_t i)
 void core_info_list_get_supported_cores(core_info_list_t *core_info_list,
       const char *path, const core_info_t **infos, size_t *num_infos)
 {
-#ifdef HAVE_ZLIB
+#ifdef HAVE_COMPRESSION
    struct string_list *list = NULL;
 #endif
    size_t supported = 0, i;
@@ -583,10 +591,20 @@ void core_info_list_get_supported_cores(core_info_list_t *core_info_list,
 
    core_info_tmp_path = path;
 
+#ifdef HAVE_COMPRESSION
+
 #ifdef HAVE_ZLIB
    if (string_is_equal_noncase(path_get_extension(path), "zip"))
-      list = file_archive_get_file_list(path, NULL);
+      list = compressed_7zip_file_list_new(path, NULL);
    core_info_tmp_list = list;
+#endif
+
+#ifdef HAVE_7ZIP
+   if (string_is_equal_noncase(path_get_extension(path), "7z"))
+      list = compressed_7zip_file_list_new(path, NULL);
+   core_info_tmp_list = list;
+#endif
+
 #endif
 
    /* Let supported core come first in list so we can return 
@@ -601,7 +619,7 @@ void core_info_list_get_supported_cores(core_info_list_t *core_info_list,
       if (core_info_does_support_file(core, path))
          continue;
 
-#ifdef HAVE_ZLIB
+#ifdef HAVE_COMPRESSION
       if (core_info_does_support_any_file(core, list))
          continue;
 #endif

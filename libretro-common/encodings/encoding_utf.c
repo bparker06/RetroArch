@@ -21,6 +21,7 @@
  */
 
 #include <stdint.h>
+#include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
 
@@ -222,3 +223,39 @@ uint32_t utf8_walk(const char **string)
       return ret | (first&15)<<12;
    return ret | (first&7)<<6;
 }
+
+bool utf16_to_char(uint8_t **utf_data,
+      size_t *dest_len, const uint16_t *in)
+{
+   unsigned len    = 0;
+
+   while (in[len] != '\0')
+      len++;
+
+   utf16_conv_utf8(NULL, dest_len, in, len);
+   *dest_len  += 1;
+   *utf_data   = (uint8_t*)malloc(*dest_len);
+   if (*utf_data == 0)
+      return false;
+
+   return utf16_conv_utf8(*utf_data, dest_len, in, len);
+}
+
+bool utf16_to_char_string(const uint16_t *in, char *s, size_t len)
+{
+   size_t     dest_len  = 0;
+   uint8_t *utf16_data  = NULL;
+   bool            ret  = utf16_to_char(&utf16_data, &dest_len, in);
+
+   if (ret)
+   {
+      utf16_data[dest_len] = 0;
+      strlcpy(s, (const char*)utf16_data, len);
+   }
+
+   free(utf16_data);
+   utf16_data = NULL;
+
+   return ret;
+}
+
