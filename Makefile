@@ -106,9 +106,11 @@ endif
 RARCH_OBJ := $(addprefix $(OBJDIR)/,$(OBJ))
 
 ifneq ($(SANITIZER),)
-    CFLAGS   := -fsanitize=$(SANITIZER) $(CFLAGS)
-    CXXFLAGS := -fsanitize=$(SANITIZER) $(CXXFLAGS)
-    LDFLAGS  := -fsanitize=$(SANITIZER) $(LDFLAGS)
+    #CFLAGS   := -fsanitize=$(SANITIZER) $(CFLAGS)
+    #CXXFLAGS := -fsanitize=$(SANITIZER) $(CXXFLAGS)
+    CFLAGS   := -fsanitize=address,undefined,integer,bounds,unsigned-integer-overflow -fno-sanitize-recover=undefined -fno-omit-frame-pointer -fPIC $(CFLAGS)
+    CXXFLAGS := -fsanitize=address,undefined,integer,bounds,unsigned-integer-overflow -fno-sanitize-recover=undefined -fno-omit-frame-pointer -fPIC $(CXXFLAGS)
+    LDFLAGS  := -fsanitize=address,undefined,integer,bounds,unsigned-integer-overflow -fno-sanitize-recover=undefined -lubsan $(LDFLAGS)
 endif
 
 ifneq ($(findstring $(GPERFTOOLS),profiler),)
