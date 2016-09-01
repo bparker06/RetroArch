@@ -30,7 +30,7 @@ static const char *stock_vertex_xmb_modern = GLSL(
    void main()
    {
      vec3 v = vec3(VertexCoord.x, 0.0, VertexCoord.y);
-     vec3 v2 = v;
+     /*vec3 v2 = v;
      vec3 v3 = v;
 
      v.y = xmb_noise2(v2)/6.0;
@@ -43,8 +43,8 @@ static const char *stock_vertex_xmb_modern = GLSL(
 
      v.z = v.z + noise(v3*7.0)/15.0;
      v.y = v.y + noise(v3*7.0)/15.0 + cos(v.x*2.0-time/5.0)/5.0 - 0.3;
-
-     gl_Position = vec4(v, 1.0);
+*/
+     gl_Position = vec4(VertexCoord, 1.0);
      fragVertexEc = gl_Position.xyz;
    }
 );
