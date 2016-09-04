@@ -200,6 +200,18 @@ char* runloop_msg_queue_pull(void)
    return strdup(msg_info.msg);
 }
 
+void toggle_menu()
+{
+   if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
+   {
+      if (rarch_ctl(RARCH_CTL_IS_INITED, NULL) &&
+            !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+         rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
+   }
+   else
+      rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
+}
+
 /* Checks if movie is being played back. */
 static bool runloop_check_movie_playback(void)
 {
@@ -1495,16 +1507,7 @@ int runloop_iterate(unsigned *sleep_ms)
 #ifdef HAVE_MENU
    if (runloop_cmd_menu_press(cmd_ptr) || 
          rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
-   {
-      if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
-      {
-         if (rarch_ctl(RARCH_CTL_IS_INITED, NULL) && 
-               !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
-            rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
-      }
-      else
-         rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
-   }
+      toggle_menu();
 #endif
 
 #ifdef HAVE_OVERLAY
@@ -1520,6 +1523,8 @@ int runloop_iterate(unsigned *sleep_ms)
       {
          if(!menu_driver_ctl(RARCH_MENU_CTL_IS_PENDING_QUIT_CONFIRM, NULL))
          {
+            if (content_is_inited() && !menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
+               toggle_menu();
             command_event(CMD_EVENT_QUIT, NULL);
          }
          else if (menu_driver_ctl(RARCH_MENU_CTL_IS_QUIT_CONFIRM, NULL))

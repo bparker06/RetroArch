@@ -79,6 +79,7 @@ typedef struct nbio_handle
    unsigned status;
 } nbio_handle_t;
 
+bool content_is_inited();
 
 #ifdef HAVE_NETWORKING
 void *task_push_http_transfer(const char *url, bool mute, const char *type,

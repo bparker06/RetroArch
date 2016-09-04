@@ -32,6 +32,8 @@
 #include "../../input/input_autodetect.h"
 #include "../../input/input_config.h"
 #include "../../cheevos.h"
+#include "../../retroarch.h"
+#include "../../tasks/tasks_internal.h"
 
 #include "../../verbosity.h"
 
@@ -322,6 +324,9 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
             if (menu_driver_ctl(RARCH_MENU_CTL_IS_PENDING_QUIT_CONFIRM, NULL))
             {
                menu_driver_ctl(RARCH_MENU_CTL_UNSET_PENDING_QUIT_CONFIRM, NULL);
+
+               if (content_is_inited())
+                  rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
             }
 
             BIT64_SET(menu->state, MENU_STATE_POP_STACK);
