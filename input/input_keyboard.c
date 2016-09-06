@@ -23,6 +23,7 @@
 
 #include "../configuration.h"
 #include "../runloop.h"
+#include "../menu/menu_popup.h"
 
 struct input_keyboard_line
 {
@@ -30,8 +31,8 @@ struct input_keyboard_line
    size_t ptr;
    size_t size;
 
-   /** Line complete callback. 
-    * Calls back after return is 
+   /** Line complete callback.
+    * Calls back after return is
     * pressed with the completed line.
     * Line can be NULL.
     **/
@@ -115,7 +116,7 @@ static bool input_keyboard_line_event(
       input_keyboard_line_t *state, uint32_t character)
 {
    char c = character >= 128 ? '?' : character;
-   /* Treat extended chars as ? as we cannot support 
+   /* Treat extended chars as ? as we cannot support
     * printable characters for unicode stuff. */
 
    if (c == '\r' || c == '\n')
@@ -165,8 +166,8 @@ static bool input_keyboard_line_event(
  *
  * Sets function pointer for keyboard line handle.
  *
- * The underlying buffer can be reallocated at any time 
- * (or be NULL), but the pointer to it remains constant 
+ * The underlying buffer can be reallocated at any time
+ * (or be NULL), but the pointer to it remains constant
  * throughout the objects lifetime.
  *
  * Returns: underlying buffer of the keyboard line.
@@ -197,6 +198,7 @@ const char **input_keyboard_start_line(void *userdata,
 void input_keyboard_event(bool down, unsigned code,
       uint32_t character, uint16_t mod, unsigned device)
 {
+   settings_t *settings = config_get_ptr();
    static bool deferred_wait_keys;
 
    if (deferred_wait_keys)
@@ -241,6 +243,16 @@ void input_keyboard_event(bool down, unsigned code,
    }
    else
    {
+      if (settings && settings->confirm_on_exit)
+      {
+         if (code == RETROK_ESCAPE)
+         {
+            if (!menu_popup_is_active())
+               menu_popup_show_message(MENU_POPUP_QUIT_CONFIRM, MENU_ENUM_LABEL_CONFIRM_ON_EXIT);
+            return;
+         }
+      }
+
       retro_keyboard_event_t *key_event = NULL;
       runloop_ctl(RUNLOOP_CTL_KEY_EVENT_GET, &key_event);
 

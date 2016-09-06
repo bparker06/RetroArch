@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -214,7 +214,7 @@ void input_driver_set(const input_driver_t **input, void **input_data)
       *input      = current_input;
       *input_data = current_input_data;
    }
-   
+
    input_driver_set_own_driver();
 }
 
@@ -317,9 +317,9 @@ void input_push_analog_dpad(struct retro_keybind *binds, unsigned mode)
       case ANALOG_DPAD_LSTICK:
          /* check if analog left is defined.   *
           * if plus and minus are equal abort. */
-         if (!((binds[RARCH_ANALOG_LEFT_X_PLUS].joyaxis == 
-               binds[RARCH_ANALOG_LEFT_X_MINUS].joyaxis) || 
-               (binds[RARCH_ANALOG_LEFT_Y_PLUS].joyaxis == 
+         if (!((binds[RARCH_ANALOG_LEFT_X_PLUS].joyaxis ==
+               binds[RARCH_ANALOG_LEFT_X_MINUS].joyaxis) ||
+               (binds[RARCH_ANALOG_LEFT_Y_PLUS].joyaxis ==
                binds[RARCH_ANALOG_LEFT_Y_MINUS].joyaxis)))
          {
             j = RARCH_ANALOG_LEFT_X_PLUS + 3;
@@ -329,11 +329,11 @@ void input_push_analog_dpad(struct retro_keybind *binds, unsigned mode)
       case ANALOG_DPAD_RSTICK:
          /* check if analog right is defined.  *
           * if plus and minus are equal abort. */
-         if (!((binds[RARCH_ANALOG_RIGHT_X_PLUS].joyaxis == 
-               binds[RARCH_ANALOG_RIGHT_X_MINUS].joyaxis) || 
-               (binds[RARCH_ANALOG_RIGHT_Y_PLUS].joyaxis == 
+         if (!((binds[RARCH_ANALOG_RIGHT_X_PLUS].joyaxis ==
+               binds[RARCH_ANALOG_RIGHT_X_MINUS].joyaxis) ||
+               (binds[RARCH_ANALOG_RIGHT_Y_PLUS].joyaxis ==
                binds[RARCH_ANALOG_RIGHT_Y_MINUS].joyaxis)))
-         {          
+         {
             j = RARCH_ANALOG_RIGHT_X_PLUS + 3;
             inherit_joyaxis = true;
          }
@@ -461,7 +461,7 @@ int16_t input_state(unsigned port, unsigned device,
 {
    int16_t res                     = 0;
    settings_t *settings            = config_get_ptr();
-   
+
 
    device &= RETRO_DEVICE_MASK;
 
@@ -477,7 +477,7 @@ int16_t input_state(unsigned port, unsigned device,
    if (settings->input.remap_binds_enable)
       input_remapping_state(port, &device, &idx, &id);
 
-   if (!input_driver_is_flushing_input() 
+   if (!input_driver_is_flushing_input()
          && !input_driver_is_libretro_input_blocked())
    {
       if (((id < RARCH_FIRST_META_KEY) || (device == RETRO_DEVICE_KEYBOARD)))
@@ -502,8 +502,8 @@ int16_t input_state(unsigned port, unsigned device,
        *
        * If turbo button is held, all buttons pressed except
        * for D-pad will go into a turbo mode. Until the button is
-       * released again, the input state will be modulated by a 
-       * periodic pulse defined by the configured duty cycle. 
+       * released again, the input state will be modulated by a
+       * periodic pulse defined by the configured duty cycle.
        */
       if (res && input_driver_turbo_btns.frame_enable[port])
          input_driver_turbo_btns.enable[port] |= (1 << id);
@@ -594,7 +594,7 @@ retro_input_t input_keys_pressed(void)
    input_driver_turbo_btns.count++;
 
    key = RARCH_ENABLE_HOTKEY;
-   
+
    if (check_input_driver_block_hotkey(input_driver_key_pressed(&key)))
       input_driver_set_libretro_input_blocked();
    else
@@ -838,11 +838,11 @@ bool input_driver_init_command(void)
 {
 #ifdef HAVE_COMMAND
    settings_t *settings = config_get_ptr();
-   if (     !settings->stdin_cmd_enable 
+   if (     !settings->stdin_cmd_enable
          && !settings->network_cmd_enable)
       return false;
 
-   if (settings->stdin_cmd_enable 
+   if (settings->stdin_cmd_enable
          && input_driver_grab_stdin())
    {
       RARCH_WARN("stdin command interface is desired, but input driver has already claimed stdin.\n"
@@ -850,7 +850,7 @@ bool input_driver_init_command(void)
    }
 
    input_driver_command = command_new(false);
-   
+
    if (!command_network_new(
             input_driver_command,
             settings->stdin_cmd_enable

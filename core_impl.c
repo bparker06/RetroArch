@@ -77,7 +77,7 @@ void core_set_input_state(retro_ctx_input_state_info_t *info)
  * core_init_libretro_cbs:
  * @data           : pointer to retro_callbacks object
  *
- * Initializes libretro callbacks, and binds the libretro callbacks 
+ * Initializes libretro callbacks, and binds the libretro callbacks
  * to default callback functions.
  **/
 static bool core_init_libretro_cbs(void *data)
@@ -396,10 +396,10 @@ bool core_load(void)
 bool core_verify_api_version(void)
 {
    unsigned api_version = core.retro_api_version();
-   RARCH_LOG("%s: %u\n", 
+   RARCH_LOG("%s: %u\n",
          msg_hash_to_str(MSG_VERSION_OF_LIBRETRO_API),
          api_version);
-   RARCH_LOG("%s: %u\n",    
+   RARCH_LOG("%s: %u\n",
          msg_hash_to_str(MSG_COMPILED_AGAINST_API),
          RETRO_API_VERSION);
 

@@ -23,6 +23,7 @@
 #include <boolean.h>
 
 #include <retro_common_api.h>
+#include <msg_hash.h>
 
 enum menu_popup_type
 {
