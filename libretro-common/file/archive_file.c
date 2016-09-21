@@ -47,6 +47,8 @@
 #include <lists/string_list.h>
 #include <string/stdstring.h>
 
+#define FLOG() fprintf(stderr, "MOO: %s: %d\n", __FUNCTION__, __LINE__)
+
 struct file_archive_file_data
 {
 #ifdef HAVE_MMAP
@@ -60,6 +62,7 @@ struct file_archive_file_data
 /* Closes, unmaps and frees. */
 void file_archive_free(file_archive_file_data_t *data)
 {
+   FLOG();
    if (!data)
       return;
 
@@ -72,6 +75,7 @@ void file_archive_free(file_archive_file_data_t *data)
 
 const uint8_t *file_archive_data(file_archive_file_data_t *data)
 {
+   FLOG();
    if (!data)
       return NULL;
    return (const uint8_t*)data->data;
@@ -79,6 +83,7 @@ const uint8_t *file_archive_data(file_archive_file_data_t *data)
 
 static size_t file_archive_size(file_archive_file_data_t *data)
 {
+   FLOG();
    if (!data)
       return 0;
    return data->size;
@@ -86,6 +91,7 @@ static size_t file_archive_size(file_archive_file_data_t *data)
 
 static file_archive_file_data_t* file_archive_open(const char *path)
 {
+   FLOG();
    file_archive_file_data_t *data = (file_archive_file_data_t*)calloc(1, sizeof(*data));
 
    if (!data)
@@ -121,6 +127,7 @@ error:
 /* Closes, unmaps and frees. */
 void file_archive_free(file_archive_file_data_t *data)
 {
+   FLOG();
    if (!data)
       return;
    if(data->data)
@@ -130,6 +137,7 @@ void file_archive_free(file_archive_file_data_t *data)
 
 const uint8_t *file_archive_data(file_archive_file_data_t *data)
 {
+   FLOG();
    if (!data)
       return NULL;
    return (const uint8_t*)data->data;
@@ -137,6 +145,7 @@ const uint8_t *file_archive_data(file_archive_file_data_t *data)
 
 static size_t file_archive_size(file_archive_file_data_t *data)
 {
+   FLOG();
    if (!data)
       return 0;
    return data->size;
@@ -144,6 +153,7 @@ static size_t file_archive_size(file_archive_file_data_t *data)
 
 static file_archive_file_data_t* file_archive_open(const char *path)
 {
+   FLOG();
    ssize_t ret            = -1;
    bool read_from_file    = false;
    file_archive_file_data_t *data = (file_archive_file_data_t*)
@@ -177,6 +187,7 @@ static int file_archive_get_file_list_cb(
       uint32_t checksum,
       struct archive_extract_userdata *userdata)
 {
+   FLOG();
    union string_list_elem_attr attr;
    struct string_list *ext_list = NULL;
    const char *file_ext         = NULL;
@@ -227,6 +238,7 @@ static int file_archive_extract_cb(const char *name, const char *valid_exts,
       unsigned cmode, uint32_t csize, uint32_t size,
       uint32_t checksum, struct archive_extract_userdata *userdata)
 {
+   FLOG();
    const char *ext                   = path_get_extension(name);
 
    /* Extract first file that matches our list. */
@@ -268,6 +280,7 @@ static int file_archive_extract_cb(const char *name, const char *valid_exts,
 int file_archive_parse_file_init(file_archive_transfer_t *state,
       const char *file)
 {
+   FLOG();
    char *last                 = NULL;
    char path[PATH_MAX_LENGTH] = {0};
 
@@ -318,6 +331,7 @@ static int file_archive_decompress_data_to_file(
       uint32_t size,
       uint32_t checksum)
 {
+   FLOG();
    if (!handle || ret == -1)
    {
       ret = 0;
@@ -351,6 +365,7 @@ end:
 
 void file_archive_parse_file_iterate_stop(file_archive_transfer_t *state)
 {
+   FLOG();
    if (!state || !state->handle)
       return;
 
@@ -366,6 +381,7 @@ int file_archive_parse_file_iterate(
       file_archive_file_cb file_cb,
       struct archive_extract_userdata *userdata)
 {
+   FLOG();
    if (!state)
       return -1;
 
@@ -450,6 +466,7 @@ int file_archive_parse_file_iterate(
 static bool file_archive_parse_file(const char *file, const char *valid_exts,
       file_archive_file_cb file_cb, struct archive_extract_userdata *userdata)
 {
+   FLOG();
    file_archive_transfer_t state = {0};
    bool returnerr        = true;
 
@@ -467,6 +484,7 @@ static bool file_archive_parse_file(const char *file, const char *valid_exts,
 
 int file_archive_parse_file_progress(file_archive_transfer_t *state)
 {
+   FLOG();
    /* FIXME: this estimate is worse than before */
    ptrdiff_t delta = 0;
 
@@ -498,6 +516,7 @@ bool file_archive_extract_file(
       const char *extraction_directory,
       char *out_path, size_t len)
 {
+   FLOG();
    struct string_list *list             = NULL;
    bool ret                             = true;
    struct archive_extract_userdata userdata = {0};
@@ -558,6 +577,7 @@ end:
 struct string_list *file_archive_get_file_list(const char *path,
       const char *valid_exts)
 {
+   FLOG();
    struct archive_extract_userdata userdata = {0};
    userdata.list_only = true;
    userdata.archive_path = strdup(path);
@@ -588,6 +608,7 @@ bool file_archive_perform_mode(const char *path, const char *valid_exts,
       const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
       uint32_t crc32, struct archive_extract_userdata *userdata)
 {
+   FLOG();
    switch (cmode)
    {
       case ARCHIVE_MODE_UNCOMPRESSED:
@@ -636,6 +657,7 @@ int file_archive_compressed_read(
       const char * path, void **buf,
       const char* optional_filename, ssize_t *length)
 {
+   FLOG();
    const struct file_archive_file_backend *backend = NULL;
    int ret                            = 0;
    struct string_list *str_list       = file_archive_filename_split(path);
@@ -683,6 +705,7 @@ error:
 struct string_list *file_archive_file_list_new(const char *path,
       const char* ext)
 {
+   FLOG();
 #ifdef HAVE_COMPRESSION
    if (path_is_compressed_file(path))
       return file_archive_get_file_list(path, ext);
@@ -700,6 +723,7 @@ struct string_list *file_archive_file_list_new(const char *path,
  */
 struct string_list *file_archive_filename_split(const char *path)
 {
+   FLOG();
    union string_list_elem_attr attr;
    struct string_list *list = string_list_new();
    const char *delim        = NULL;
@@ -736,6 +760,7 @@ error:
 
 const struct file_archive_file_backend *file_archive_get_zlib_file_backend(void)
 {
+   FLOG();
 #ifdef HAVE_ZLIB
    return &zlib_backend;
 #else
@@ -745,6 +770,7 @@ const struct file_archive_file_backend *file_archive_get_zlib_file_backend(void)
 
 const struct file_archive_file_backend *file_archive_get_7z_file_backend(void)
 {
+   FLOG();
 #ifdef HAVE_7ZIP
    return &sevenzip_backend;
 #else
@@ -754,6 +780,7 @@ const struct file_archive_file_backend *file_archive_get_7z_file_backend(void)
 
 const struct file_archive_file_backend* file_archive_get_file_backend(const char *path)
 {
+   FLOG();
    const char *file_ext          = NULL;
    char *last                    = NULL;
    char newpath[PATH_MAX_LENGTH] = {0};
