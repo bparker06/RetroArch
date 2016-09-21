@@ -410,6 +410,7 @@ static int task_database_iterate_playlist_archive(
    userdata.archive_path = strdup(name);
 
    FLOG();
+   fprintf(stderr, "%s: %s\n", __FUNCTION__, name);
    if (db->state.type == ARCHIVE_TRANSFER_INIT)
       file_archive_parse_file_iterate(&db->state,
                &returnerr, name, NULL, NULL,
