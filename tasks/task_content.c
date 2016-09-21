@@ -96,6 +96,8 @@
 
 #define MAX_ARGS 32
 
+#define FLOG() fprintf(stderr, "MOO: %s: %d\n", __FUNCTION__, __LINE__)
+
 typedef struct content_stream
 {
    uint32_t a;
@@ -126,6 +128,7 @@ static int content_file_read(const char *path, void **buf, ssize_t *length)
 #ifdef HAVE_COMPRESSION
    if (path_is_compressed_file(path))
    {
+      FLOG();
       if (file_archive_compressed_read(path, buf, NULL, length))
          return 1;
    }
@@ -392,6 +395,7 @@ static bool load_content_from_compressed_archive(
    fill_pathname_join(new_path, new_basedir,
          path_basename(path), sizeof(new_path));
 
+   FLOG();
    ret = file_archive_compressed_read(path, NULL, new_path, &new_path_len);
 
    if (!ret || new_path_len < 0)
@@ -444,7 +448,8 @@ static bool init_content_file_extract(
 
       strlcpy(temp_content, content->elems[i].data,
             sizeof(temp_content));
-
+ 
+      FLOG();
       if (!file_archive_extract_file(temp_content,
                sizeof(temp_content), valid_ext,
                *settings->directory.cache ?

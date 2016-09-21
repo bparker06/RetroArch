@@ -25,6 +25,8 @@
 #include "../verbosity.h"
 #include "../msg_hash.h"
 
+#define FLOG() fprintf(stderr, "MOO: %s: %d\n", __FUNCTION__, __LINE__)
+
 static int file_decompressed_target_file(const char *name,
       const char *valid_exts,
       const uint8_t *cdata,
@@ -60,6 +62,7 @@ static int file_decompressed_subdir(const char *name,
    if (!path_mkdir(path_dir))
       goto error;
 
+   FLOG();
    if (!file_archive_perform_mode(path, valid_exts,
             cdata, cmode, csize, size, crc32, userdata))
       goto error;
@@ -97,6 +100,7 @@ static int file_decompressed(const char *name, const char *valid_exts,
 
    fill_pathname_join(path, dec->target_dir, name, sizeof(path));
 
+   FLOG();
    if (!file_archive_perform_mode(path, valid_exts,
             cdata, cmode, csize, size, crc32, userdata))
       goto error;
@@ -151,6 +155,7 @@ static void task_decompress_handler(retro_task_t *task)
    userdata.dec            = dec;
    userdata.archive_path   = dec->source_file;
 
+   FLOG();
    ret                     = file_archive_parse_file_iterate(&dec->archive,
          &retdec, dec->source_file,
          dec->valid_ext, file_decompressed, &userdata);
@@ -175,6 +180,7 @@ static void task_decompress_handler_target_file(retro_task_t *task)
 
    userdata.archive_path = dec->source_file;
 
+   FLOG();
    ret = file_archive_parse_file_iterate(&dec->archive,
          &retdec, dec->source_file,
          dec->valid_ext, file_decompressed_target_file, &userdata);
@@ -200,6 +206,7 @@ static void task_decompress_handler_subdir(retro_task_t *task)
    userdata.dec            = dec;
    userdata.archive_path   = dec->source_file;
 
+   FLOG();
    ret                     = file_archive_parse_file_iterate(&dec->archive,
          &retdec, dec->source_file,
          dec->valid_ext, file_decompressed_subdir, &userdata);

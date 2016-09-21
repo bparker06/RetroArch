@@ -67,6 +67,8 @@
 #include "../performance_counters.h"
 #include "../core_info.h"
 
+#define FLOG() fprintf(stderr, "MOO: %s: %d\n", __FUNCTION__, __LINE__)
+
 #ifdef HAVE_NETWORKING
 static void print_buf_lines(file_list_t *list, char *buf,
       const char *label, int buf_size,
@@ -3373,6 +3375,7 @@ static int menu_displaylist_parse_generic(
 
    if (path_is_compressed)
    {
+      FLOG();
       str_list = file_archive_file_list_new(info->path, info->exts);
    }
    else

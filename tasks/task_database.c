@@ -39,6 +39,8 @@
 #define COLLECTION_SIZE                99999
 #endif
 
+#define FLOG() fprintf(stderr, "MOO: %s: %d\n", __FUNCTION__, __LINE__)
+
 typedef struct database_state_handle
 {
    database_info_list_t *info;
@@ -407,6 +409,7 @@ static int task_database_iterate_playlist_archive(
    userdata.crc = db_state->crc;
    userdata.archive_path = strdup(name);
 
+   FLOG();
    if (db->state.type == ARCHIVE_TRANSFER_INIT)
       file_archive_parse_file_iterate(&db->state,
                &returnerr, name, NULL, NULL,
