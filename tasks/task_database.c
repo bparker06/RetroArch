@@ -188,6 +188,7 @@ static int task_database_iterate_playlist(
          memset(&db->state, 0, sizeof(file_archive_transfer_t));
          db_state->archive_name[0] = '\0';
          db->state.type = ARCHIVE_TRANSFER_INIT;
+         /* first check crc of archive itself */
          return file_get_crc(db_state, name, &db_state->archive_crc);
 #else
          break;

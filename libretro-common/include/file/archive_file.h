@@ -214,6 +214,8 @@ const struct file_archive_file_backend* file_archive_get_7z_file_backend(void);
 
 const struct file_archive_file_backend* file_archive_get_file_backend(const char *path);
 
+uint32 new_file_archive_get_first_crc32(const char *path);
+
 extern const struct file_archive_file_backend zlib_backend;
 extern const struct file_archive_file_backend sevenzip_backend;
 

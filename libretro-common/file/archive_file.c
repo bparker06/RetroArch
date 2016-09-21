@@ -807,3 +807,8 @@ const struct file_archive_file_backend* file_archive_get_file_backend(const char
 
    return NULL;
 }
+
+uint32 new_file_archive_get_first_crc32(const char *path)
+{
+
+}
