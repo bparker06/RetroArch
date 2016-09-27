@@ -49,7 +49,7 @@ static const struct font_glyph *font_renderer_ft_get_glyph(
       void *data, uint32_t code)
 {
    ft_font_renderer_t *handle = (ft_font_renderer_t*)data;
-   const unsigned atlas = code / FT_NUM_ATLAS_MAX;
+   const unsigned atlas = code / FT_ATLAS_SIZE;
 
    if (!handle)
       return NULL;
