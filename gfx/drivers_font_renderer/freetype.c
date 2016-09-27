@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -27,17 +27,14 @@
 
 #include "../font_driver.h"
 
-#define FT_ATLAS_ROWS 16
-#define FT_ATLAS_COLS 16
-#define FT_ATLAS_SIZE (FT_ATLAS_ROWS * FT_ATLAS_COLS)
+#define FT_NUM_ATLAS_MAX 1
 
 typedef struct freetype_renderer
 {
    FT_Library lib;
    FT_Face face;
 
-   struct font_atlas atlas;
-   struct font_glyph glyphs[FT_ATLAS_SIZE];
+   struct font_atlas atlases[FT_NUM_ATLAS_MAX];
 } ft_font_renderer_t;
 
 static const struct font_atlas *font_renderer_ft_get_atlas(void *data)
@@ -45,25 +42,30 @@ static const struct font_atlas *font_renderer_ft_get_atlas(void *data)
    ft_font_renderer_t *handle = (ft_font_renderer_t*)data;
    if (!handle)
       return NULL;
-   return &handle->atlas;
+   return &handle->atlases[0];
 }
 
 static const struct font_glyph *font_renderer_ft_get_glyph(
       void *data, uint32_t code)
 {
    ft_font_renderer_t *handle = (ft_font_renderer_t*)data;
+   const unsigned atlas = code / FT_NUM_ATLAS_MAX;
+
    if (!handle)
       return NULL;
-   return code < FT_ATLAS_SIZE ? &handle->glyphs[code] : NULL;
+   return code < (FT_ATLAS_SIZE * FT_NUM_ATLAS_MAX) ? &handle->atlases[atlas].glyphs[code] : NULL;
 }
 
 static void font_renderer_ft_free(void *data)
 {
    ft_font_renderer_t *handle = (ft_font_renderer_t*)data;
+   unsigned i;
+
    if (!handle)
       return;
 
-   free(handle->atlas.buffer);
+   for (i = 0; i < FT_NUM_ATLAS_MAX; i++)
+      free(handle->atlases[i].buffer);
 
    if (handle->face)
       FT_Done_Face(handle->face);
@@ -74,90 +76,95 @@ static void font_renderer_ft_free(void *data)
 
 static bool font_renderer_create_atlas(ft_font_renderer_t *handle)
 {
-   unsigned i;
+   unsigned i, atlas;
    bool ret = true;
 
-   uint8_t *buffer[FT_ATLAS_SIZE] = {NULL};
-   unsigned pitches[FT_ATLAS_SIZE] = {0};
+   uint8_t *buffer[FT_ATLAS_SIZE * FT_NUM_ATLAS_MAX] = {NULL};
+   unsigned pitches[FT_ATLAS_SIZE * FT_NUM_ATLAS_MAX] = {0};
 
    unsigned max_width = 0;
    unsigned max_height = 0;
 
-   for (i = 0; i < FT_ATLAS_SIZE; i++)
+   for (atlas = 0; atlas < FT_NUM_ATLAS_MAX; atlas++)
    {
-      FT_GlyphSlot slot;
-      struct font_glyph *glyph = &handle->glyphs[i];
+      for (i = 0; i < FT_ATLAS_SIZE; i++)
+      {
+         FT_GlyphSlot slot;
+         struct font_glyph *glyph = &handle->atlases[atlas].glyphs[i];
+         unsigned codepoint = (FT_ATLAS_SIZE * atlas) + i;
 
-      if (!glyph)
-         continue;
+         if (!glyph)
+            continue;
 
-      if (FT_Load_Char(handle->face, i, FT_LOAD_RENDER))
+         if (FT_Load_Char(handle->face, codepoint, FT_LOAD_RENDER))
+         {
+            ret = false;
+            goto end;
+         }
+
+         FT_Render_Glyph(handle->face->glyph, FT_RENDER_MODE_NORMAL);
+         slot = handle->face->glyph;
+
+         /* Some glyphs can be blank. */
+         buffer[codepoint] = (uint8_t*)calloc(slot->bitmap.rows * slot->bitmap.pitch, 1);
+
+         glyph->width = slot->bitmap.width;
+         glyph->height = slot->bitmap.rows;
+         pitches[codepoint] = slot->bitmap.pitch;
+
+         glyph->advance_x = slot->advance.x >> 6;
+         glyph->advance_y = slot->advance.y >> 6;
+         glyph->draw_offset_x = slot->bitmap_left;
+         glyph->draw_offset_y = -slot->bitmap_top;
+
+         if (buffer[codepoint] && slot->bitmap.buffer)
+            memcpy(buffer[codepoint], slot->bitmap.buffer,
+                  slot->bitmap.rows * pitches[codepoint]);
+         max_width  = MAX(max_width, (unsigned)slot->bitmap.width);
+         max_height = MAX(max_height, (unsigned)slot->bitmap.rows);
+      }
+
+      handle->atlases[atlas].width = max_width * FT_ATLAS_COLS;
+      handle->atlases[atlas].height = max_height * FT_ATLAS_ROWS;
+
+      handle->atlases[atlas].buffer = (uint8_t*)
+         calloc(handle->atlases[atlas].width * handle->atlases[atlas].height, 1);
+
+      if (!handle->atlases[atlas].buffer)
       {
          ret = false;
          goto end;
       }
 
-      FT_Render_Glyph(handle->face->glyph, FT_RENDER_MODE_NORMAL);
-      slot = handle->face->glyph;
-
-      /* Some glyphs can be blank. */
-      buffer[i] = (uint8_t*)calloc(slot->bitmap.rows * slot->bitmap.pitch, 1);
-
-      glyph->width = slot->bitmap.width;
-      glyph->height = slot->bitmap.rows;
-      pitches[i] = slot->bitmap.pitch;
-
-      glyph->advance_x = slot->advance.x >> 6;
-      glyph->advance_y = slot->advance.y >> 6;
-      glyph->draw_offset_x = slot->bitmap_left;
-      glyph->draw_offset_y = -slot->bitmap_top;
-
-      if (buffer[i] && slot->bitmap.buffer)
-         memcpy(buffer[i], slot->bitmap.buffer,
-               slot->bitmap.rows * pitches[i]);
-      max_width  = MAX(max_width, (unsigned)slot->bitmap.width);
-      max_height = MAX(max_height, (unsigned)slot->bitmap.rows);
-   }
-
-   handle->atlas.width = max_width * FT_ATLAS_COLS;
-   handle->atlas.height = max_height * FT_ATLAS_ROWS;
-
-   handle->atlas.buffer = (uint8_t*)
-      calloc(handle->atlas.width * handle->atlas.height, 1);
-
-   if (!handle->atlas.buffer)
-   {
-      ret = false;
-      goto end;
-   }
-
-   /* Blit our texture atlas. */
-   for (i = 0; i < FT_ATLAS_SIZE; i++)
-   {
-      uint8_t *dst      = NULL;
-      unsigned offset_x = (i % FT_ATLAS_COLS) * max_width;
-      unsigned offset_y = (i / FT_ATLAS_COLS) * max_height;
-
-      handle->glyphs[i].atlas_offset_x = offset_x;
-      handle->glyphs[i].atlas_offset_y = offset_y;
-
-      dst = (uint8_t*)handle->atlas.buffer;
-      dst += offset_x + offset_y * handle->atlas.width;
-
-      if (buffer[i])
+      /* Blit our texture atlas. */
+      for (i = 0; i < FT_ATLAS_SIZE; i++)
       {
-         unsigned r, c;
-         const uint8_t *src = (const uint8_t*)buffer[i];
+         uint8_t *dst      = NULL;
+         unsigned offset_x = (i % FT_ATLAS_COLS) * max_width;
+         unsigned offset_y = (i / FT_ATLAS_COLS) * max_height;
+         unsigned codepoint = (FT_ATLAS_SIZE * atlas) + i;
 
-         for (r = 0; r < handle->glyphs[i].height;
-               r++, dst += handle->atlas.width, src += pitches[i])
-            for (c = 0; c < handle->glyphs[i].width; c++)
-               dst[c] = src[c];
+         handle->atlases[atlas].glyphs[i].atlas_offset_x = offset_x;
+         handle->atlases[atlas].glyphs[i].atlas_offset_y = offset_y;
+
+         dst = (uint8_t*)handle->atlases[atlas].buffer;
+         dst += offset_x + offset_y * handle->atlases[atlas].width;
+
+         if (buffer[codepoint])
+         {
+            unsigned r, c;
+            const uint8_t *src = (const uint8_t*)buffer[codepoint];
+
+            for (r = 0; r < handle->atlases[atlas].glyphs[i].height;
+                  r++, dst += handle->atlases[atlas].width, src += pitches[codepoint])
+               for (c = 0; c < handle->atlases[atlas].glyphs[i].width; c++)
+                  dst[c] = src[c];
+         }
       }
    }
 
 end:
-   for (i = 0; i < FT_ATLAS_SIZE; i++)
+   for (i = 0; i < FT_ATLAS_SIZE * FT_NUM_ATLAS_MAX; i++)
       free(buffer[i]);
    return ret;
 }
@@ -194,7 +201,7 @@ error:
    return NULL;
 }
 
-/* Not the cleanest way to do things for sure, 
+/* Not the cleanest way to do things for sure,
  * but should hopefully work ... */
 
 static const char *font_paths[] = {

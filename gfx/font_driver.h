@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -24,6 +24,10 @@
 
 RETRO_BEGIN_DECLS
 
+#define FT_ATLAS_ROWS 16
+#define FT_ATLAS_COLS 16
+#define FT_ATLAS_SIZE (FT_ATLAS_ROWS * FT_ATLAS_COLS)
+
 enum font_driver_render_api
 {
    FONT_DRIVER_RENDER_DONT_CARE,
@@ -42,10 +46,10 @@ enum text_alignment
 
 /* All coordinates and offsets are top-left oriented.
  *
- * This is a texture-atlas approach which allows text to 
+ * This is a texture-atlas approach which allows text to
  * be drawn in a single draw call.
  *
- * It is up to the code using this interface to actually 
+ * It is up to the code using this interface to actually
  * generate proper vertex buffers and upload the atlas texture to GPU. */
 
 struct font_glyph
@@ -57,7 +61,7 @@ struct font_glyph
    unsigned atlas_offset_x;
    unsigned atlas_offset_y;
 
-   /* When drawing this glyph, apply an offset to 
+   /* When drawing this glyph, apply an offset to
     * current X/Y draw coordinate. */
    int draw_offset_x;
    int draw_offset_y;
@@ -72,6 +76,7 @@ struct font_atlas
    uint8_t *buffer; /* Alpha channel. */
    unsigned width;
    unsigned height;
+   struct font_glyph glyphs[FT_ATLAS_SIZE];
 };
 
 struct font_params
@@ -103,7 +108,7 @@ typedef struct font_renderer
    const struct font_glyph *(*get_glyph)(void *data, uint32_t code);
    void (*bind_block)(void *data, void *block);
    void (*flush)(void *data);
-   
+
    int (*get_message_width)(void *data, const char *msg, unsigned msg_len_full, float scale);
 } font_renderer_t;
 
@@ -121,14 +126,14 @@ typedef struct font_renderer_driver
    const char *(*get_default_font)(void);
 
    const char *ident;
-   
+
    int (*get_line_height)(void* data);
 } font_renderer_driver_t;
 
 /* font_path can be NULL for default font. */
 int font_renderer_create_default(const void **driver,
       void **handle, const char *font_path, unsigned font_size);
-      
+
 bool font_driver_has_render_msg(void);
 
 void font_driver_render_msg(void *data, const char *msg, const struct font_params *params);
