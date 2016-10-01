@@ -312,7 +312,7 @@ bool take_screenshot(void)
 
    free(name_base);
 
-   runloop_msg_queue_push(msg, 1, is_paused ? 1 : 180, true);
+   /*runloop_msg_queue_push(msg, 1, is_paused ? 1 : 180, true);*/
 
    if (is_paused)
       video_driver_cached_frame_render();
