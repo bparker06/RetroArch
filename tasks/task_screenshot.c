@@ -77,6 +77,7 @@ static bool screenshot_dump(
    uint8_t *out_buffer            = NULL;
    struct scaler_ctx scaler       = {0};
 #endif
+   unsigned i                     = 0;
 
    if (settings->auto_screenshot_filename)
    {
@@ -112,14 +113,32 @@ static bool screenshot_dump(
 
    scaler_ctx_gen_reset(&scaler);
 
-   ret = rpng_save_image_bgr24(
+   if (width > 0 && height > 0)
+   {
+      for (i = 0; i < width * height * 3; i++)
+      {
+         uint8_t zero[1] = {0};
+
+         if (memcmp(out_buffer + i, zero, 1) != 0)
+         {
+            /* non-zero pixel found */
+            free(out_buffer);
+            return true;
+         }
+      }
+   }
+
+   free(out_buffer);
+   return false;
+
+   /*ret = rpng_save_image_bgr24(
          filename,
          out_buffer,
          width,
          height,
          width * 3
          );
-   free(out_buffer);
+   free(out_buffer);*/
 #elif defined(HAVE_RBMP)
    enum rbmp_source_type bmp_type = RBMP_SOURCE_TYPE_DONT_CARE;
 

@@ -1289,6 +1289,41 @@ int runloop_iterate(unsigned *sleep_ms)
    runloop_iterate_linefeed_overlay(settings);
 #endif
 
+   if (content_is_inited())
+   {
+      static unsigned frames = 0;
+      static bool done = false;
+
+      if (frames >= 480)
+      {
+         fprintf(stderr, "TEST: failed at frame %d\n", frames);
+         command_event(CMD_EVENT_QUIT, NULL);
+      }
+      else if (frames == 360)
+      {
+         if (take_screenshot())
+            done = true;
+      }
+      else if (frames == 240)
+      {
+         if (take_screenshot())
+            done = true;
+      }
+      else if (frames == 120)
+      {
+         if (take_screenshot())
+            done = true;
+      }
+
+      if (done)
+      {
+         fprintf(stderr, "TEST: done at frame %d\n", frames);
+         command_event(CMD_EVENT_QUIT, NULL);
+      }
+
+      frames++;
+   }
+
    if (runloop_iterate_time_to_exit(
             runloop_cmd_press(cmd_ptr, RARCH_QUIT_KEY)) != 1)
    {
