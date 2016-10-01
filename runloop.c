@@ -1294,25 +1294,24 @@ int runloop_iterate(unsigned *sleep_ms)
       static unsigned frames = 0;
       static bool done = false;
 
-      if (frames >= 480)
+      if (frames > 600)
       {
          fprintf(stderr, "TEST: failed at frame %d\n", frames);
          command_event(CMD_EVENT_QUIT, NULL);
       }
-      else if (frames == 360)
+
+      switch (frames)
       {
-         if (take_screenshot())
-            done = true;
-      }
-      else if (frames == 240)
-      {
-         if (take_screenshot())
-            done = true;
-      }
-      else if (frames == 120)
-      {
-         if (take_screenshot())
-            done = true;
+         case 120:
+         case 240:
+         case 360:
+         case 480:
+         case 600:
+            if (take_screenshot())
+               done = true;
+            break;
+         default:
+            break;
       }
 
       if (done)
