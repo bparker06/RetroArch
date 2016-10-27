@@ -3176,7 +3176,7 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return _tr("Per-Game Options: game-specific core options found at");
       case MSG_RESTORING_DEFAULT_SHADER_PRESET_TO:
          return _tr("Shaders: restoring default shader preset to");
-      case  MSG_SORRY_UNIMPLEMENTED_CORES_DONT_DEMAND_CONTENT_NETPLAY:
+      case MSG_SORRY_UNIMPLEMENTED_CORES_DONT_DEMAND_CONTENT_NETPLAY:
          return _tr("Sorry, unimplemented: cores that don't demand content cannot participate in netplay.");
       case MSG_FOUND_AUTO_SAVESTATE_IN:
          return _tr("Found auto savestate in");
