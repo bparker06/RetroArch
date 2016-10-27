@@ -166,8 +166,8 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "Killing it in any hard way (SIGKILL, etc.) will \n"
                   "terminate RetroArch without saving RAM, etc."
 #ifdef __unix__
-                  "\nOn Unix-likes, SIGINT/SIGTERM allows a clean \n")
-                  "deinitialization."
+                  "\nOn Unix-likes, SIGINT/SIGTERM allows a clean \n"
+                  "deinitialization.")
 #endif
                   "");
             break;
@@ -885,7 +885,7 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
 #endif
 #ifdef HAVE_GLSL
 #ifdef HAVE_CG
-               "/")
+               "/"
 #endif
                "GLSL"
 #endif
@@ -901,7 +901,7 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                "If the CGP uses scaling methods which are not \n"
                "simple, (i.e. source scaling, same scaling \n"
                "factor for X/Y), the scaling factor displayed \n"
-               "in the menu might not be correct."
+               "in the menu might not be correct.")
                );
          break;
       case MENU_ENUM_LABEL_VIDEO_SHADER_SCALE_PASS:
@@ -982,9 +982,9 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                "\nThis is not not the case on \n"
                "consoles however, where \n"
                "looking at the config file \n"
-               "manually isn't really an option.")
+               "manually isn't really an option."
 #endif
-               );
+               ));
          break;
       case MENU_ENUM_LABEL_CONFIRM_ON_EXIT:
          snprintf(s, len, _tr("Are you sure you want to quit?"));
@@ -1089,7 +1089,7 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
       case MENU_ENUM_LABEL_VIDEO_FILTER:
 #ifdef HAVE_FILTERS_BUILTIN
          snprintf(s, len,
-               "CPU-based video filter.");
+               _tr("CPU-based video filter."));
 #else
          snprintf(s, len,
                _tr("CPU-based video filter.\n"
@@ -1204,8 +1204,8 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                " \n"
                "RetroArch will go to sleep to ensure that \n"
                "the maximum rate will not be exceeded.\n"
-               "Do not rely on this cap to be perfectly \n")
-               "accurate.");
+               "Do not rely on this cap to be perfectly \n"
+               "accurate."));
          break;
       case MENU_ENUM_LABEL_VIDEO_MONITOR_INDEX:
          snprintf(s, len,
@@ -1475,8 +1475,8 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                _tr("Slowmotion ratio."
                " \n"
-               "When slowmotion, content will slow\n")
-               "down by factor.");
+               "When slowmotion, content will slow\n"
+               "down by factor."));
          break;
       case MENU_ENUM_LABEL_INPUT_AXIS_THRESHOLD:
          snprintf(s, len,
@@ -1752,10 +1752,10 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                "\nKilling it in any hard way (SIGKILL, \n"
                "etc) will terminate without saving\n"
                "RAM, etc. On Unix-likes,\n"
-               "SIGINT/SIGTERM allows\n")
+               "SIGINT/SIGTERM allows\n"
                "a clean deinitialization."
 #endif
-               );
+               ));
          break;
       case MENU_ENUM_LABEL_LOAD_STATE:
          snprintf(s, len,
@@ -1846,17 +1846,17 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                " \n"
 #ifdef HAVE_NETWORKING
                "You can obtain cores in several ways: \n"
-               "* Download them by going to\n")
+               "* Download them by going to\n"
                "'%s' -> '%s'.\n"
                "* Manually move them over to\n"
-               "'%s'.",
+               "'%s'."),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH)
 #else
-               "You can obtain cores by\n"
+               _tr("You can obtain cores by\n"
                "manually moving them over to\n"
-               "'%s'.",
+               "'%s'."),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH)
 #endif
                );
@@ -1871,8 +1871,8 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                " \n"
                "NOTE: By default, virtual gamepad overlays are\n"
                "hidden when in the menu.\n"
-               "If you'd like to change this behavior,\n")
-               "you can set '%s' to false.",
+               "If you'd like to change this behavior,\n"
+               "you can set '%s' to false."),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU)
