@@ -206,9 +206,9 @@ msgstr ""\n
 
       string_list_join_concat(buf, sizeof(buf), l, "");
 
-      printf("\nmsgctxt: \"%s\"\n", map->elems[map_i].key);
-      printf("msgid: %s%s\n", lead, buf);
-      printf("msgstr: \"\"\n");
+      printf("\nmsgctxt \"%s\"\n", map->elems[map_i].key);
+      printf("msgid %s%s\n", lead, buf);
+      printf("msgstr \"\"\n");
    }
 
    return 0;
