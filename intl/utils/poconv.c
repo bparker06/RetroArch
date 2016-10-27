@@ -21,8 +21,11 @@
 
 /* gcc -Wall -Werror -O2 -std=gnu89 -I../../libretro-common/include -o poconv poconv.c ../../libretro-common/lists/string_list.c ../../libretro-common/compat/compat_strl.c */
 
-/* FIXME: assumes no literal contains any double quotes within, which at least
- * is the case at the time of this writing */
+/* FIXME: Some assumptions are made about the input file:
+ * - no literal can contain any double quotes within
+ * - no _tr() macro can appear more than once on a line
+ * - all contiguous multi-line literals that will be translated MUST be entirely encapsulated in a _tr() macro, even if there are ifdefs around some of the literals
+ */
 
 #include <stdio.h>
 #include <stdlib.h>

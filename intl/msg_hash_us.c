@@ -977,12 +977,12 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                "considered immutable as it is \n"
                "likely maintained by the user, \n"
                "and should not be overwritten \n"
-               "behind the user's back.")
+               "behind the user's back."
 #if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
                "\nThis is not not the case on \n"
                "consoles however, where \n"
                "looking at the config file \n"
-               "manually isn't really an option."
+               "manually isn't really an option.")
 #endif
                );
          break;
