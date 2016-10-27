@@ -19,9 +19,10 @@
 /* FIXME: C89 (non-GNU) will not build because of an apparent issue in
  * libretro-common? (using undefined things like struct timespec) */
 
-/* gcc -Wall -Werror -O2 -std=gnu89 -I../../libretro-common/include -o poconv poconv.c ../../libretro-common/lists/string_list.c ../../libretro-common/compat/compat_strl.c */
+/* gcc -Wall -Werror -O2 -std=gnu89 -I../../libretro-common/include -o poconv poconv.c ../../libretro-common/lists/string_list.c ../../libretro-common/compat/compat_strl.c ../../libretro-common/lists/string_list_map.c */
 
 /* FIXME: Some assumptions are made about the input file(s):
+ * - no single line in the input file nor any string literal (after concatenation) are larger than 4096 bytes
  * - no literal can contain any double quotes within (including translated .po files)
  * - no _tr() macro can appear more than once on a line
  * - all contiguous multi-line literals that will be translated MUST be entirely encapsulated in a _tr() macro, even if there are ifdefs around some of the literals
@@ -32,6 +33,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <compat/strl.h>
+#include <lists/string_list_map.h>
 #include <lists/string_list.h>
 
 #define BUFSIZE 4096
@@ -53,7 +55,9 @@ int main(int argc, char *argv[])
    enum state_t state = STATE_CASE;
    unsigned case_count = 0;
    struct string_list *list = NULL;
+   struct string_list_map *map = string_list_map_new();
    char cur_case[BUFSIZE] = {0};
+   unsigned map_i;
 
    if (argc < 2)
    {
@@ -72,19 +76,6 @@ int main(int argc, char *argv[])
       fprintf(stderr, "Could not open file %s for reading.\n", argv[1]);
       exit(1);
    }
-
-   printf(""
-STR(msgid ""\n
-msgstr ""\n
-"Project-Id-Version: \n"\n
-"POT-Creation-Date: \n"\n
-"PO-Revision-Date: \n"\n
-"Last-Translator: \n"\n
-"Language-Team: \n"\n
-"MIME-Version: 1.0\n"\n
-"Content-Type: text/plain; charset=utf-8\n"\n
-"Content-Transfer-Encoding: 8bit\n"\n
-"X-Generator: RetroArch\n"\n\n));
 
    while (!feof(f))
    {
@@ -108,11 +99,6 @@ msgstr ""\n
 
             strlcpy(cur_case, case_stmt, sizeof(cur_case));
 
-            if (case_count > 0)
-               printf("\n");
-
-            printf("msgctxt \"%s\"\n", case_stmt);
-
             case_count++;
             state = STATE_NEW_STR;
          }
@@ -132,18 +118,19 @@ msgstr ""\n
 
          if (end)
          {
+            struct string_list *l = string_list_new();
+            union string_list_elem_attr attr = {0};
+
             literal[end-literal+1] = '\0';
             state = STATE_CASE;
 
-            printf("msgid %s\n", literal);
-            printf("msgstr \"\"\n");
+            string_list_append(l, literal, attr);
+            string_list_map_append(map, cur_case, l, attr);
+            string_list_free(l);
          }
          else
          {
             union string_list_elem_attr attr = {0};
-
-            if (cur_case[0] && state == STATE_CASE)
-               printf("\nmsgctxt \"%s\"\n", cur_case);
 
             state = STATE_CONTINUE_STR;
 
@@ -179,16 +166,7 @@ msgstr ""\n
                literal[end-start+1] = '\0';
 
                string_list_append(list, literal, attr);
-
-               printf("msgid \"\"\n");
-
-               for (i = 0; i < list->size; i++)
-               {
-                  const char *str = list->elems[i].data;
-                  printf("%s", str);
-               }
-
-               printf("\nmsgstr \"\"\n");
+               string_list_map_append(map, cur_case, list, attr);
             }
             else
             {
@@ -207,6 +185,32 @@ msgstr ""\n
    fclose(f);
 
    free(buf);
+
+   printf(""
+STR(msgid ""\n
+msgstr ""\n
+"Project-Id-Version: \n"\n
+"POT-Creation-Date: \n"\n
+"PO-Revision-Date: \n"\n
+"Last-Translator: \n"\n
+"Language-Team: \n"\n
+"MIME-Version: 1.0\n"\n
+"Content-Type: text/plain; charset=utf-8\n"\n
+"Content-Transfer-Encoding: 8bit\n"\n
+"X-Generator: RetroArch\n"\n));
+
+   for (map_i = 0; map_i < map->size; map_i++)
+   {
+      char buf[BUFSIZE] = {0};
+      const struct string_list *l = map->elems[map_i].data;
+      const char *lead = l->size > 1 ? "\"\"\n" : "";
+
+      string_list_join_concat(buf, sizeof(buf), l, "");
+
+      printf("\nmsgctxt: \"%s\"\n", map->elems[map_i].key);
+      printf("msgid: %s%s\n", lead, buf);
+      printf("msgstr: \"\"\n");
+   }
 
    return 0;
 }
