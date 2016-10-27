@@ -21,8 +21,8 @@
 
 /* gcc -Wall -Werror -O2 -std=gnu89 -I../../libretro-common/include -o poconv poconv.c ../../libretro-common/lists/string_list.c ../../libretro-common/compat/compat_strl.c */
 
-/* FIXME: Some assumptions are made about the input file:
- * - no literal can contain any double quotes within
+/* FIXME: Some assumptions are made about the input file(s):
+ * - no literal can contain any double quotes within (including translated .po files)
  * - no _tr() macro can appear more than once on a line
  * - all contiguous multi-line literals that will be translated MUST be entirely encapsulated in a _tr() macro, even if there are ifdefs around some of the literals
  */
@@ -80,7 +80,6 @@ msgstr ""\n
 "POT-Creation-Date: \n"\n
 "PO-Revision-Date: \n"\n
 "Last-Translator: \n"\n
-"Language: en_US\n"\n
 "Language-Team: \n"\n
 "MIME-Version: 1.0\n"\n
 "Content-Type: text/plain; charset=utf-8\n"\n
@@ -137,7 +136,7 @@ msgstr ""\n
             state = STATE_CASE;
 
             printf("msgid %s\n", literal);
-            printf("msgstr %s\n", literal);
+            printf("msgstr \"\"\n");
          }
          else
          {
@@ -190,14 +189,6 @@ msgstr ""\n
                }
 
                printf("\nmsgstr \"\"\n");
-
-               for (i = 0; i < list->size; i++)
-               {
-                  const char *str = list->elems[i].data;
-                  printf("%s", str);
-               }
-
-               printf("\n");
             }
             else
             {
