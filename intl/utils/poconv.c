@@ -159,7 +159,6 @@ int main(int argc, char *argv[])
             if (end)
             {
                union string_list_elem_attr attr = {0};
-               unsigned i;
 
                state = STATE_CASE;
                literal = start;
