@@ -47,6 +47,45 @@ enum state_t
    STATE_CONTINUE_STR
 };
 
+char* read_file(const char *path)
+{
+   FILE *f = fopen(path, "rb");
+   unsigned len = 0;
+   char *buf = NULL;
+
+   if (!f)
+   {
+      fprintf(stderr, "Could not open file %s for reading.\n", path);
+      exit(1);
+   }
+
+   fseek(f, 0, SEEK_END);
+
+   len = ftell(f);
+   buf = malloc(len + 1);
+
+   if (!buf)
+   {
+      fprintf(stderr, "Could not allocate memory.\n");
+      exit(1);
+   }
+
+   rewind(f);
+
+   if (fread(buf, len, 1, f) != len)
+   {
+      fprintf(stderr, "Could not read entire file: %s\n", path);
+      free(buf);
+      exit(1);
+   }
+
+   buf[len] = '\0';
+
+   fclose(f);
+
+   return buf;
+}
+
 int main(int argc, char *argv[])
 {
    FILE *f;
@@ -61,10 +100,12 @@ int main(int argc, char *argv[])
 
    if (argc < 2)
    {
-      fprintf(stderr, "Usage: %s msg_hash_us.c\n\n"
-              "Generates a new translation file based off of the english strings in msg_hash_us.c.\n"
-              "The argument to this program is the existing english translation file, and the\n"
-              "output will be sent to stdout.\n",
+      fprintf(stderr, "Usage: %s msg_hash_us.c [lang.po]\n\n"
+              "Without specifying a .po file, generates a new POT translation file based off of the english strings in msg_hash_us.c.\n"
+              "This file can be edited by hand or by using a gettext compatible editor.\n"
+              "If a .po file is specified, new code for a msg_hash_xx.c is generated for that language. The two-letter language code\n"
+              "for the file is taken from the first two letters of the given .po file.\n"
+              "All output is sent to stdout.\n",
               argv[0]);
       exit(1);
    }
