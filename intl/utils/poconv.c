@@ -34,7 +34,6 @@
 #include <string.h>
 #include <compat/strl.h>
 #include <lists/string_list_map.h>
-#include <lists/string_list.h>
 
 #define BUFSIZE 4096
 
@@ -50,7 +49,8 @@ enum state_t
 char* read_file(const char *path)
 {
    FILE *f = fopen(path, "rb");
-   unsigned len = 0;
+   int len = 0;
+   int read_len = 0;
    char *buf = NULL;
 
    if (!f)
@@ -62,6 +62,13 @@ char* read_file(const char *path)
    fseek(f, 0, SEEK_END);
 
    len = ftell(f);
+
+   if (len <= 0)
+   {
+      fprintf(stderr, "File is empty or could not seek to end.\n");
+      exit(1);
+   }
+
    buf = malloc(len + 1);
 
    if (!buf)
@@ -72,9 +79,11 @@ char* read_file(const char *path)
 
    rewind(f);
 
-   if (fread(buf, len, 1, f) != len)
+   read_len = fread(buf, 1, len, f) ;
+
+   if (read_len != len)
    {
-      fprintf(stderr, "Could not read entire file: %s\n", path);
+      fprintf(stderr, "Could not read entire file %s: %d != %d\n", path, read_len, len);
       free(buf);
       exit(1);
    }
@@ -226,30 +235,39 @@ int main(int argc, char *argv[])
 
    free(buf);
 
-   printf(""
-STR(msgid ""\n
-msgstr ""\n
-"Project-Id-Version: \n"\n
-"POT-Creation-Date: \n"\n
-"PO-Revision-Date: \n"\n
-"Last-Translator: \n"\n
-"Language-Team: \n"\n
-"MIME-Version: 1.0\n"\n
-"Content-Type: text/plain; charset=utf-8\n"\n
-"Content-Transfer-Encoding: 8bit\n"\n
-"X-Generator: RetroArch\n"\n));
-
-   for (map_i = 0; map_i < map->size; map_i++)
+   if (argc < 3)
    {
-      char buf[BUFSIZE] = {0};
-      const struct string_list *l = map->elems[map_i].data;
-      const char *lead = l->size > 1 ? "\"\"\n" : "";
+      printf(""
+   STR(msgid ""\n
+   msgstr ""\n
+   "Project-Id-Version: \n"\n
+   "POT-Creation-Date: \n"\n
+   "PO-Revision-Date: \n"\n
+   "Last-Translator: \n"\n
+   "Language-Team: \n"\n
+   "MIME-Version: 1.0\n"\n
+   "Content-Type: text/plain; charset=utf-8\n"\n
+   "Content-Transfer-Encoding: 8bit\n"\n
+   "X-Generator: RetroArch\n"\n));
 
-      string_list_join_concat(buf, sizeof(buf), l, "");
+      for (map_i = 0; map_i < map->size; map_i++)
+      {
+         char buf[BUFSIZE] = {0};
+         const struct string_list *l = map->elems[map_i].data;
+         const char *lead = l->size > 1 ? "\"\"\n" : "";
 
-      printf("\nmsgctxt \"%s\"\n", map->elems[map_i].key);
-      printf("msgid %s%s\n", lead, buf);
-      printf("msgstr \"\"\n");
+         string_list_join_concat(buf, sizeof(buf), l, "");
+
+         printf("\nmsgctxt \"%s\"\n", map->elems[map_i].key);
+         printf("msgid %s%s\n", lead, buf);
+         printf("msgstr \"\"\n");
+      }
+   }
+   else
+   {
+      const char *po = read_file(argv[2]);
+
+      free((void*)po);
    }
 
    return 0;
