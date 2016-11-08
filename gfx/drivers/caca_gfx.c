@@ -35,7 +35,8 @@ static void caca_gfx_free(void *data);
 
 static void caca_gfx_create()
 {
-   caca_cv = caca_create_canvas(0, 0);
+   caca_display = caca_create_display(NULL);
+   caca_cv = caca_get_canvas(caca_display);
 
    if (caca_rgb32)
       caca_dither = caca_create_dither(32, caca_video_width, caca_video_height, caca_video_pitch,
@@ -44,9 +45,7 @@ static void caca_gfx_create()
       caca_dither = caca_create_dither(16, caca_video_width, caca_video_height, caca_video_pitch,
                             0xf800, 0x7e0, 0x1f, 0x0);
 
-   caca_display = caca_create_display(caca_cv);
-
-   printf("caca dither %d x %d pitch: %d rgb32: %d\n", caca_video_width, caca_video_height, caca_video_pitch, caca_rgb32);
+   printf("caca dither %d x %d pitch: %d rgb32: %d\n", caca_get_canvas_width(caca_cv), caca_get_canvas_height(caca_cv), caca_video_pitch, caca_rgb32);
 }
 
 static void *caca_gfx_init(const video_info_t *video,
@@ -107,10 +106,12 @@ static bool caca_gfx_frame(void *data, const void *frame,
       caca_gfx_create();
    }
 
-   caca_dither_bitmap(caca_cv, 0, 0, caca_video_width, caca_video_height,
+   caca_dither_bitmap(caca_cv, 0, 0,
+                      caca_get_canvas_width(caca_cv),
+                      caca_get_canvas_height(caca_cv),
                       caca_dither, frame);
 
-   buffer = caca_export_canvas_to_memory(caca_cv, "ansi", &len);
+   buffer = caca_export_canvas_to_memory(caca_cv, "caca", &len);
 
    if (buffer)
    {
@@ -169,8 +170,8 @@ static void caca_gfx_free(void *data)
    if (caca_dither)
       caca_free_dither(caca_dither);
 
-   if (caca_cv)
-      caca_free_canvas(caca_cv);
+   /*if (caca_cv)
+      caca_free_canvas(caca_cv);*/
 }
 
 static bool caca_gfx_set_shader(void *data,
