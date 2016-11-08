@@ -504,6 +504,7 @@ extern video_driver_t video_dispmanx;
 extern video_driver_t video_sunxi;
 extern video_driver_t video_drm;
 extern video_driver_t video_xshm;
+extern video_driver_t video_caca;
 extern video_driver_t video_null;
 
 RETRO_END_DECLS

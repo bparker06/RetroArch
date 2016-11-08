@@ -344,6 +344,11 @@ VIDEO DRIVER
 #elif defined(XENON)
 #include "../gfx/drivers/xenon360_gfx.c"
 #endif
+
+#ifdef HAVE_CACA
+#include "../gfx/drivers/caca_gfx.c"
+#endif
+
 #include "../gfx/drivers/nullgfx.c"
 
 /*============================================================
