@@ -165,10 +165,16 @@ static void caca_gfx_free(void *data)
    (void)data;
 
    if (caca_display)
+   {
       caca_free_display(caca_display);
+      caca_display = NULL;
+   }
 
    if (caca_dither)
+   {
       caca_free_dither(caca_dither);
+      caca_dither = NULL;
+   }
 
    /*if (caca_cv)
       caca_free_canvas(caca_cv);*/
