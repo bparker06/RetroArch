@@ -18,7 +18,7 @@
 #include "../../driver.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"
-#include "../video_context_driver.h"
+#include "../../menu/menu_driver.h"
 
 #include <retro_miscellaneous.h>
 #include <caca.h>
@@ -44,8 +44,6 @@ static void caca_gfx_create()
    else
       caca_dither = caca_create_dither(16, caca_video_width, caca_video_height, caca_video_pitch,
                             0xf800, 0x7e0, 0x1f, 0x0);
-
-   printf("caca dither %d x %d pitch: %d rgb32: %d\n", caca_get_canvas_width(caca_cv), caca_get_canvas_height(caca_cv), caca_video_pitch, caca_rgb32);
 }
 
 static void *caca_gfx_init(const video_info_t *video,
@@ -65,16 +63,12 @@ static void *caca_gfx_init(const video_info_t *video,
       else
          caca_video_pitch = video->width * 2;
 
-      printf("caca init %d x %d rgb32: %d\n", video->width, video->height, video->rgb32);
-
       caca_gfx_create();
 
       if (!caca_cv || !caca_dither || !caca_display)
       {
          /* TODO: handle errors */
       }
-
-      //fwrite("\033[?25l", 6, 1, stdout);
    }
 
    return (void*)-1;
@@ -94,7 +88,7 @@ static bool caca_gfx_frame(void *data, const void *frame,
    (void)pitch;
    (void)msg;
 
-   if (!caca_cv || !frame)
+   if (!caca_cv || !frame || !frame_width || !frame_height)
       return true;
 
    if (caca_video_width != frame_width || caca_video_height != frame_height || caca_video_pitch != pitch)
@@ -117,14 +111,19 @@ static bool caca_gfx_frame(void *data, const void *frame,
    {
       if (len)
       {
-         //fwrite("\033[0;0H", 6, 1, stdout);
-         //fwrite(buffer, len, 1, stdout);
          /* How does this know where our image is?? */
          caca_refresh_display(caca_display);
       }
 
       free(buffer);
    }
+
+#ifdef HAVE_MENU
+   menu_driver_ctl(RARCH_MENU_CTL_FRAME, NULL);
+#endif
+
+   if (font_driver_has_render_msg() && msg)
+      font_driver_render_msg(NULL, msg, NULL);
 
    return true;
 }
@@ -175,9 +174,6 @@ static void caca_gfx_free(void *data)
       caca_free_dither(caca_dither);
       caca_dither = NULL;
    }
-
-   /*if (caca_cv)
-      caca_free_canvas(caca_cv);*/
 }
 
 static bool caca_gfx_set_shader(void *data,
