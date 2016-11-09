@@ -46,8 +46,6 @@ static void *caca_init_font(void *data,
 
    font->caca = (caca_t*)data;
 
-   printf("caca init font\n");
-
    font_size = 1;
 
    if (!font_renderer_create_default((const void**)&font->caca_font_driver,
@@ -68,16 +66,12 @@ static void caca_render_free_font(void *data)
 static int caca_get_message_width(void *data, const char *msg,
       unsigned msg_len, float scale)
 {
-   printf("caca get message width: %s\n", msg);
-
    return 0;
 }
 
 static const struct font_glyph *caca_font_get_glyph(
       void *data, uint32_t code)
 {
-   printf("caca font get glyph: %u\n", code);
-
    return NULL;
 }
 
@@ -108,17 +102,15 @@ static void caca_render_msg(void *data, const char *msg,
        !*font->caca->caca_cv || !*font->caca->caca_display)
       return;
 
-   printf("moo at %f x %f: %s\n", x, y, msg);
    caca_set_color_ansi(*font->caca->caca_cv, CACA_LIGHTGRAY, CACA_BLACK);
 
    width = caca_get_canvas_width(*font->caca->caca_cv);
    height = caca_get_canvas_height(*font->caca->caca_cv);
 
    if (params->drop_x || params->drop_y)
-      caca_put_str(*font->caca->caca_cv, (params->x + params->scale * params->drop_x / width) * width, -((params->y + params->scale * params->drop_y / height) * height), msg);
+      caca_put_str(*font->caca->caca_cv, (params->x + params->scale * params->drop_x / width) * width, ((params->y + params->scale * params->drop_y / height) * height), msg);
    else
-      caca_put_str(*font->caca->caca_cv, params->x * width, -(params->y * height), msg);
-   //printf("putting string at %f x %f: %s\n", params->x * caca_get_canvas_width(*font->caca->caca_cv), params->y * caca_get_canvas_height(*font->caca->caca_cv), msg);
+      caca_put_str(*font->caca->caca_cv, params->x * width, (params->y * height), msg);
 
    caca_refresh_display(*font->caca->caca_display);
 }
