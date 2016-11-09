@@ -15,13 +15,14 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <retro_miscellaneous.h>
+#include <caca.h>
+
 #include "../../driver.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"
 #include "../../menu/menu_driver.h"
-
-#include <retro_miscellaneous.h>
-#include <caca.h>
+#include "../common/caca_common.h"
 
 static caca_canvas_t *caca_cv = NULL;
 static caca_dither_t *caca_dither = NULL;
@@ -53,6 +54,13 @@ static void caca_gfx_create()
 static void *caca_gfx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
+   settings_t *settings = config_get_ptr();
+   caca_t *caca = (caca_t*)calloc(1, sizeof(*caca));
+
+   caca->caca_cv = caca_cv;
+   caca->caca_dither = caca_dither;
+   caca->caca_display = caca_display;
+
    *input = NULL;
    *input_data = NULL;
 
@@ -75,7 +83,12 @@ static void *caca_gfx_init(const video_info_t *video,
       }
    }
 
-   return (void*)-1;
+   video_driver_set_size(&caca_video_width, &caca_video_height);
+
+   if (settings->video.font_enable)
+      font_driver_init_osd(NULL, false, FONT_DRIVER_RENDER_CACA);
+
+   return caca;
 }
 
 static bool caca_gfx_frame(void *data, const void *frame,
@@ -93,7 +106,7 @@ static bool caca_gfx_frame(void *data, const void *frame,
    (void)pitch;
    (void)msg;
 
-   if (!caca_cv || !frame || !frame_width || !frame_height)
+   if (!frame || !frame_width || !frame_height)
       return true;
 
    if (caca_video_width != frame_width || caca_video_height != frame_height || caca_video_pitch != pitch)
@@ -104,6 +117,9 @@ static bool caca_gfx_frame(void *data, const void *frame,
       caca_gfx_free(NULL);
       caca_gfx_create();
    }
+
+   if (!caca_cv)
+      return true;
 
    if (caca_menu_frame)
       frame_to_copy = caca_menu_frame;
@@ -248,12 +264,7 @@ static void caca_set_texture_frame(void *data,
 static void caca_set_osd_msg(void *data, const char *msg,
       const struct font_params *params, void *font)
 {
-   //font_driver_render_msg(font, msg, params);
-   caca_set_color_ansi(caca_cv, CACA_LIGHTGRAY, CACA_BLACK);
-   caca_put_str(caca_cv, params->x * caca_get_canvas_width(caca_cv), params->y * caca_get_canvas_height(caca_cv), msg);
-   printf("putting string at %f x %f: %s\n", params->x * caca_get_canvas_width(caca_cv), params->y * caca_get_canvas_height(caca_cv), msg);
-
-   caca_refresh_display(caca_display);
+   font_driver_render_msg(font, msg, params);
 }
 
 static const video_poke_interface_t caca_poke_interface = {
