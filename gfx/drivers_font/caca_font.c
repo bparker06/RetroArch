@@ -108,9 +108,9 @@ static void caca_render_msg(void *data, const char *msg,
    height = caca_get_canvas_height(*font->caca->caca_cv);
 
    if (params->drop_x || params->drop_y)
-      caca_put_str(*font->caca->caca_cv, (params->x + params->scale * params->drop_x / width) * width, ((params->y + params->scale * params->drop_y / height) * height), msg);
+      caca_put_str(*font->caca->caca_cv, (x + params->scale * params->drop_x / width) * width, height-((y + params->scale * params->drop_y / height) * height), msg);
    else
-      caca_put_str(*font->caca->caca_cv, params->x * width, (params->y * height), msg);
+      caca_put_str(*font->caca->caca_cv, x * width, height-(y * height), msg);
 
    caca_refresh_display(*font->caca->caca_display);
 }
