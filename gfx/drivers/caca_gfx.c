@@ -43,12 +43,20 @@ static void caca_gfx_create()
    caca_display = caca_create_display(NULL);
    caca_cv = caca_get_canvas(caca_display);
 
+   if(!caca_video_width || !caca_video_height)
+   {
+      caca_video_width = caca_get_canvas_width(caca_cv);
+      caca_video_height = caca_get_canvas_height(caca_cv);
+   }
+
    if (caca_rgb32)
       caca_dither = caca_create_dither(32, caca_video_width, caca_video_height, caca_video_pitch,
                             0x00ff0000, 0xff00, 0xff, 0x0);
    else
       caca_dither = caca_create_dither(16, caca_video_width, caca_video_height, caca_video_pitch,
                             0xf800, 0x7e0, 0x1f, 0x0);
+
+   video_driver_set_size(&caca_video_width, &caca_video_height);
 }
 
 static void *caca_gfx_init(const video_info_t *video,
@@ -68,22 +76,17 @@ static void *caca_gfx_init(const video_info_t *video,
    caca_video_height = video->height;
    caca_rgb32 = video->rgb32;
 
-   if (video->width && video->height)
+   if (video->rgb32)
+      caca_video_pitch = video->width * 4;
+   else
+      caca_video_pitch = video->width * 2;
+
+   caca_gfx_create();
+
+   if (!caca_cv || !caca_dither || !caca_display)
    {
-      if (video->rgb32)
-         caca_video_pitch = video->width * 4;
-      else
-         caca_video_pitch = video->width * 2;
-
-      caca_gfx_create();
-
-      if (!caca_cv || !caca_dither || !caca_display)
-      {
-         /* TODO: handle errors */
-      }
+      /* TODO: handle errors */
    }
-
-   video_driver_set_size(&caca_video_width, &caca_video_height);
 
    if (settings->video.font_enable)
       font_driver_init_osd(NULL, false, FONT_DRIVER_RENDER_CACA);
@@ -111,12 +114,14 @@ static bool caca_gfx_frame(void *data, const void *frame,
 
    if (caca_video_width != frame_width || caca_video_height != frame_height || caca_video_pitch != pitch)
    {
-      caca_video_width = frame_width;
-      caca_video_height = frame_height;
-      caca_video_pitch = pitch;
-      caca_gfx_free(NULL);
-      caca_gfx_create();
-      video_driver_set_size(&caca_video_width, &caca_video_height);
+      if (frame_width > 4 && frame_height > 4)
+      {
+         caca_video_width = frame_width;
+         caca_video_height = frame_height;
+         caca_video_pitch = pitch;
+         caca_gfx_free(NULL);
+         caca_gfx_create();
+      }
    }
 
    if (!caca_cv)
