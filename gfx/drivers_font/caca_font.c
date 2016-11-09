@@ -48,6 +48,8 @@ static void *caca_init_font(void *data,
 
    printf("caca init font\n");
 
+   font_size = 1;
+
    if (!font_renderer_create_default((const void**)&font->caca_font_driver,
             &font->caca_font_data, font_path, font_size))
    {
@@ -84,6 +86,7 @@ static void caca_render_msg(void *data, const char *msg,
 {
    caca_raster_t *font = (caca_raster_t*)data;
    float x, y;
+   unsigned width, height;
    settings_t *settings = config_get_ptr();
    const struct font_params *params = (const struct font_params*)userdata;
 
@@ -101,15 +104,33 @@ static void caca_render_msg(void *data, const char *msg,
       y = settings->video.msg_pos_y;
    }
 
-   if (!font || !font->caca || !font->caca->caca_cv || !font->caca->caca_display)
+   if (!font->caca || !font->caca->caca_cv || !font->caca->caca_display ||
+       !*font->caca->caca_cv || !*font->caca->caca_display)
       return;
 
    printf("moo at %f x %f: %s\n", x, y, msg);
-   caca_set_color_ansi(font->caca->caca_cv, CACA_LIGHTGRAY, CACA_BLACK);
-   caca_put_str(font->caca->caca_cv, params->x * caca_get_canvas_width(font->caca->caca_cv), params->y * caca_get_canvas_height(font->caca->caca_cv), msg);
-   printf("putting string at %f x %f: %s\n", params->x * caca_get_canvas_width(font->caca->caca_cv), params->y * caca_get_canvas_height(font->caca->caca_cv), msg);
+   caca_set_color_ansi(*font->caca->caca_cv, CACA_LIGHTGRAY, CACA_BLACK);
 
-   caca_refresh_display(font->caca->caca_display);
+   width = caca_get_canvas_width(*font->caca->caca_cv);
+   height = caca_get_canvas_height(*font->caca->caca_cv);
+
+   if (params->drop_x || params->drop_y)
+      caca_put_str(*font->caca->caca_cv, (params->x + params->scale * params->drop_x / width) * width, -((params->y + params->scale * params->drop_y / height) * height), msg);
+   else
+      caca_put_str(*font->caca->caca_cv, params->x * width, -(params->y * height), msg);
+   //printf("putting string at %f x %f: %s\n", params->x * caca_get_canvas_width(*font->caca->caca_cv), params->y * caca_get_canvas_height(*font->caca->caca_cv), msg);
+
+   caca_refresh_display(*font->caca->caca_display);
+}
+
+static void caca_font_flush_block(void* data)
+{
+   (void)data;
+}
+
+static void caca_font_bind_block(void* data, void* userdata)
+{
+   (void)data;
 }
 
 font_renderer_t caca_font = {
@@ -118,7 +139,7 @@ font_renderer_t caca_font = {
    caca_render_msg,
    "caca font",
    caca_font_get_glyph,       /* get_glyph */
-   NULL,                      /* bind_block */
-   NULL,                      /* flush */
+   caca_font_bind_block,      /* bind_block */
+   caca_font_flush_block,     /* flush */
    caca_get_message_width     /* get_message_width */
 };

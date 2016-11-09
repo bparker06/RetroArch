@@ -57,9 +57,9 @@ static void *caca_gfx_init(const video_info_t *video,
    settings_t *settings = config_get_ptr();
    caca_t *caca = (caca_t*)calloc(1, sizeof(*caca));
 
-   caca->caca_cv = caca_cv;
-   caca->caca_dither = caca_dither;
-   caca->caca_display = caca_display;
+   caca->caca_cv = &caca_cv;
+   caca->caca_dither = &caca_dither;
+   caca->caca_display = &caca_display;
 
    *input = NULL;
    *input_data = NULL;
@@ -116,6 +116,7 @@ static bool caca_gfx_frame(void *data, const void *frame,
       caca_video_pitch = pitch;
       caca_gfx_free(NULL);
       caca_gfx_create();
+      video_driver_set_size(&caca_video_width, &caca_video_height);
    }
 
    if (!caca_cv)
@@ -161,6 +162,7 @@ static void caca_gfx_set_nonblock_state(void *data, bool toggle)
 static bool caca_gfx_alive(void *data)
 {
    (void)data;
+   video_driver_set_size(&caca_video_width, &caca_video_height);
    return true;
 }
 
