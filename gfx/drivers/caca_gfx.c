@@ -26,6 +26,10 @@
 static caca_canvas_t *caca_cv = NULL;
 static caca_dither_t *caca_dither = NULL;
 static caca_display_t *caca_display = NULL;
+static unsigned char *caca_menu_frame = NULL;
+static unsigned caca_menu_width = 0;
+static unsigned caca_menu_height = 0;
+static unsigned caca_menu_pitch = 0;
 static unsigned caca_video_width = 0;
 static unsigned caca_video_height = 0;
 static unsigned caca_video_pitch = 0;
@@ -80,6 +84,7 @@ static bool caca_gfx_frame(void *data, const void *frame,
 {
    size_t len = 0;
    void *buffer = NULL;
+   const void *frame_to_copy = frame;
 
    (void)data;
    (void)frame;
@@ -100,10 +105,13 @@ static bool caca_gfx_frame(void *data, const void *frame,
       caca_gfx_create();
    }
 
+   if (caca_menu_frame)
+      frame_to_copy = caca_menu_frame;
+
    caca_dither_bitmap(caca_cv, 0, 0,
                       caca_get_canvas_width(caca_cv),
                       caca_get_canvas_height(caca_cv),
-                      caca_dither, frame);
+                      caca_dither, frame_to_copy);
 
    buffer = caca_export_canvas_to_memory(caca_cv, "caca", &len);
 
@@ -174,6 +182,12 @@ static void caca_gfx_free(void *data)
       caca_free_dither(caca_dither);
       caca_dither = NULL;
    }
+
+   if (caca_menu_frame)
+   {
+      free(caca_menu_frame);
+      caca_menu_frame = NULL;
+   }
 }
 
 static bool caca_gfx_set_shader(void *data,
@@ -208,11 +222,79 @@ static bool caca_gfx_read_viewport(void *data, uint8_t *buffer)
    return true;
 }
 
+static void caca_set_texture_frame(void *data,
+      const void *frame, bool rgb32, unsigned width, unsigned height,
+      float alpha)
+{
+   unsigned pitch = width * 2;
+
+   if (rgb32)
+      pitch = width * 4;
+
+   if (caca_menu_frame)
+   {
+      free(caca_menu_frame);
+      caca_menu_frame = NULL;
+   }
+
+   if (!caca_menu_frame || caca_menu_width != width || caca_menu_height != height || caca_menu_pitch != pitch)
+      if (pitch && height)
+         caca_menu_frame = (unsigned char*)malloc(pitch * height);
+
+   if (caca_menu_frame && frame && pitch && height)
+      memcpy(caca_menu_frame, frame, pitch * height);
+}
+
+static void caca_set_osd_msg(void *data, const char *msg,
+      const struct font_params *params, void *font)
+{
+   //font_driver_render_msg(font, msg, params);
+   caca_set_color_ansi(caca_cv, CACA_LIGHTGRAY, CACA_BLACK);
+   caca_put_str(caca_cv, params->x * caca_get_canvas_width(caca_cv), params->y * caca_get_canvas_height(caca_cv), msg);
+   printf("putting string at %f x %f: %s\n", params->x * caca_get_canvas_width(caca_cv), params->y * caca_get_canvas_height(caca_cv), msg);
+
+   caca_refresh_display(caca_display);
+}
+
+static const video_poke_interface_t caca_poke_interface = {
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+#ifdef HAVE_FBO
+   NULL,
+#else
+   NULL,
+#endif
+   NULL,
+   NULL,
+   NULL,
+#if defined(HAVE_MENU)
+   caca_set_texture_frame,
+   NULL,
+   caca_set_osd_msg,
+   NULL,
+#else
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+#endif
+
+   NULL,
+#ifdef HAVE_MENU
+   NULL,
+#endif
+};
+
 static void caca_gfx_get_poke_interface(void *data,
       const video_poke_interface_t **iface)
 {
    (void)data;
-   (void)iface;
+   *iface = &caca_poke_interface;
 }
 
 void caca_gfx_set_viewport(void *data, unsigned viewport_width,
