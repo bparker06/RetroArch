@@ -28,9 +28,9 @@ typedef struct caca_display caca_display_t;
 
 typedef struct caca
 {
-   caca_canvas_t *caca_cv;
-   caca_dither_t *caca_dither;
-   caca_display_t *caca_display;
+   caca_canvas_t **caca_cv;
+   caca_dither_t **caca_dither;
+   caca_display_t **caca_display;
 } caca_t;
 
 #endif
