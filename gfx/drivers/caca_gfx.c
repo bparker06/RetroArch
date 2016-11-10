@@ -101,6 +101,9 @@ static bool caca_gfx_frame(void *data, const void *frame,
    size_t len = 0;
    void *buffer = NULL;
    const void *frame_to_copy = frame;
+   unsigned width = 0;
+   unsigned height = 0;
+   bool draw = true;
 
    (void)data;
    (void)frame;
@@ -130,23 +133,13 @@ static bool caca_gfx_frame(void *data, const void *frame,
    if (caca_menu_frame)
       frame_to_copy = caca_menu_frame;
 
-   caca_dither_bitmap(caca_cv, 0, 0,
-                      caca_get_canvas_width(caca_cv),
-                      caca_get_canvas_height(caca_cv),
-                      caca_dither, frame_to_copy);
+   width = caca_get_canvas_width(caca_cv);
+   height = caca_get_canvas_height(caca_cv);
 
-   buffer = caca_export_canvas_to_memory(caca_cv, "caca", &len);
+   if (frame_to_copy == frame && frame_width == 4 && frame_height == 4 && (frame_width < width && frame_height < height))
+      draw = false;
 
-   if (buffer)
-   {
-      if (len)
-      {
-         /* How does this know where our image is?? */
-         caca_refresh_display(caca_display);
-      }
-
-      free(buffer);
-   }
+   caca_clear_canvas(caca_cv);
 
 #ifdef HAVE_MENU
    menu_driver_ctl(RARCH_MENU_CTL_FRAME, NULL);
@@ -154,6 +147,24 @@ static bool caca_gfx_frame(void *data, const void *frame,
 
    if (font_driver_has_render_msg() && msg)
       font_driver_render_msg(NULL, msg, NULL);
+
+   if (draw)
+   {
+      caca_dither_bitmap(caca_cv, 0, 0,
+                         width,
+                         height,
+                         caca_dither, frame_to_copy);
+
+      buffer = caca_export_canvas_to_memory(caca_cv, "caca", &len);
+
+      if (buffer)
+      {
+         if (len)
+            caca_refresh_display(caca_display);
+
+         free(buffer);
+      }
+   }
 
    return true;
 }
