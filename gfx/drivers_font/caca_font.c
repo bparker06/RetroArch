@@ -81,6 +81,7 @@ static void caca_render_msg(void *data, const char *msg,
    caca_raster_t *font = (caca_raster_t*)data;
    float x, y;
    unsigned width, height;
+   unsigned newX, newY;
    settings_t *settings = config_get_ptr();
    const struct font_params *params = (const struct font_params*)userdata;
 
@@ -102,15 +103,16 @@ static void caca_render_msg(void *data, const char *msg,
        !*font->caca->caca_cv || !*font->caca->caca_display)
       return;
 
-   caca_set_color_ansi(*font->caca->caca_cv, CACA_LIGHTGRAY, CACA_BLACK);
-
    width = caca_get_canvas_width(*font->caca->caca_cv);
    height = caca_get_canvas_height(*font->caca->caca_cv);
 
-   if (params->drop_x || params->drop_y)
-      caca_put_str(*font->caca->caca_cv, (x + params->scale * params->drop_x / width) * width, height-((y + params->scale * params->drop_y / height) * height), msg);
-   else
-      caca_put_str(*font->caca->caca_cv, x * width, height-(y * height), msg);
+   newX = x * width;
+   newY = height - (y * height);
+
+   if (strlen(msg) + newX > width)
+      newX -= strlen(msg) + newX - width;
+
+   caca_put_str(*font->caca->caca_cv, newX, newY, msg);
 
    caca_refresh_display(*font->caca->caca_display);
 }
