@@ -113,7 +113,6 @@ static void caca_render_msg(void *data, const char *msg,
       newX -= strlen(msg) + newX - width;
 
    caca_put_str(*font->caca->caca_cv, newX, newY, msg);
-
    caca_refresh_display(*font->caca->caca_display);
 }
 
