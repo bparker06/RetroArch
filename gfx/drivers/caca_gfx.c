@@ -15,13 +15,14 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <retro_miscellaneous.h>
+#include <caca.h>
+
 #include "../../driver.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"
 #include "../../menu/menu_driver.h"
-
-#include <retro_miscellaneous.h>
-#include <caca.h>
+#include "../common/caca_common.h"
 
 static caca_canvas_t *caca_cv = NULL;
 static caca_dither_t *caca_dither = NULL;
@@ -42,17 +43,32 @@ static void caca_gfx_create()
    caca_display = caca_create_display(NULL);
    caca_cv = caca_get_canvas(caca_display);
 
+   if(!caca_video_width || !caca_video_height)
+   {
+      caca_video_width = caca_get_canvas_width(caca_cv);
+      caca_video_height = caca_get_canvas_height(caca_cv);
+   }
+
    if (caca_rgb32)
       caca_dither = caca_create_dither(32, caca_video_width, caca_video_height, caca_video_pitch,
                             0x00ff0000, 0xff00, 0xff, 0x0);
    else
       caca_dither = caca_create_dither(16, caca_video_width, caca_video_height, caca_video_pitch,
                             0xf800, 0x7e0, 0x1f, 0x0);
+
+   video_driver_set_size(&caca_video_width, &caca_video_height);
 }
 
 static void *caca_gfx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
+   settings_t *settings = config_get_ptr();
+   caca_t *caca = (caca_t*)calloc(1, sizeof(*caca));
+
+   caca->caca_cv = &caca_cv;
+   caca->caca_dither = &caca_dither;
+   caca->caca_display = &caca_display;
+
    *input = NULL;
    *input_data = NULL;
 
@@ -60,22 +76,22 @@ static void *caca_gfx_init(const video_info_t *video,
    caca_video_height = video->height;
    caca_rgb32 = video->rgb32;
 
-   if (video->width && video->height)
+   if (video->rgb32)
+      caca_video_pitch = video->width * 4;
+   else
+      caca_video_pitch = video->width * 2;
+
+   caca_gfx_create();
+
+   if (!caca_cv || !caca_dither || !caca_display)
    {
-      if (video->rgb32)
-         caca_video_pitch = video->width * 4;
-      else
-         caca_video_pitch = video->width * 2;
-
-      caca_gfx_create();
-
-      if (!caca_cv || !caca_dither || !caca_display)
-      {
-         /* TODO: handle errors */
-      }
+      /* TODO: handle errors */
    }
 
-   return (void*)-1;
+   if (settings->video.font_enable)
+      font_driver_init_osd(NULL, false, FONT_DRIVER_RENDER_CACA);
+
+   return caca;
 }
 
 static bool caca_gfx_frame(void *data, const void *frame,
@@ -85,6 +101,9 @@ static bool caca_gfx_frame(void *data, const void *frame,
    size_t len = 0;
    void *buffer = NULL;
    const void *frame_to_copy = frame;
+   unsigned width = 0;
+   unsigned height = 0;
+   bool draw = true;
 
    (void)data;
    (void)frame;
@@ -93,38 +112,34 @@ static bool caca_gfx_frame(void *data, const void *frame,
    (void)pitch;
    (void)msg;
 
-   if (!caca_cv || !frame || !frame_width || !frame_height)
+   if (!frame || !frame_width || !frame_height)
       return true;
 
    if (caca_video_width != frame_width || caca_video_height != frame_height || caca_video_pitch != pitch)
    {
-      caca_video_width = frame_width;
-      caca_video_height = frame_height;
-      caca_video_pitch = pitch;
-      caca_gfx_free(NULL);
-      caca_gfx_create();
+      if (frame_width > 4 && frame_height > 4)
+      {
+         caca_video_width = frame_width;
+         caca_video_height = frame_height;
+         caca_video_pitch = pitch;
+         caca_gfx_free(NULL);
+         caca_gfx_create();
+      }
    }
+
+   if (!caca_cv)
+      return true;
 
    if (caca_menu_frame)
       frame_to_copy = caca_menu_frame;
 
-   caca_dither_bitmap(caca_cv, 0, 0,
-                      caca_get_canvas_width(caca_cv),
-                      caca_get_canvas_height(caca_cv),
-                      caca_dither, frame_to_copy);
+   width = caca_get_canvas_width(caca_cv);
+   height = caca_get_canvas_height(caca_cv);
 
-   buffer = caca_export_canvas_to_memory(caca_cv, "caca", &len);
+   if (frame_to_copy == frame && frame_width == 4 && frame_height == 4 && (frame_width < width && frame_height < height))
+      draw = false;
 
-   if (buffer)
-   {
-      if (len)
-      {
-         /* How does this know where our image is?? */
-         caca_refresh_display(caca_display);
-      }
-
-      free(buffer);
-   }
+   caca_clear_canvas(caca_cv);
 
 #ifdef HAVE_MENU
    menu_driver_ctl(RARCH_MENU_CTL_FRAME, NULL);
@@ -132,6 +147,24 @@ static bool caca_gfx_frame(void *data, const void *frame,
 
    if (font_driver_has_render_msg() && msg)
       font_driver_render_msg(NULL, msg, NULL);
+
+   if (draw)
+   {
+      caca_dither_bitmap(caca_cv, 0, 0,
+                         width,
+                         height,
+                         caca_dither, frame_to_copy);
+
+      buffer = caca_export_canvas_to_memory(caca_cv, "caca", &len);
+
+      if (buffer)
+      {
+         if (len)
+            caca_refresh_display(caca_display);
+
+         free(buffer);
+      }
+   }
 
    return true;
 }
@@ -145,6 +178,7 @@ static void caca_gfx_set_nonblock_state(void *data, bool toggle)
 static bool caca_gfx_alive(void *data)
 {
    (void)data;
+   video_driver_set_size(&caca_video_width, &caca_video_height);
    return true;
 }
 
@@ -248,12 +282,7 @@ static void caca_set_texture_frame(void *data,
 static void caca_set_osd_msg(void *data, const char *msg,
       const struct font_params *params, void *font)
 {
-   //font_driver_render_msg(font, msg, params);
-   caca_set_color_ansi(caca_cv, CACA_LIGHTGRAY, CACA_BLACK);
-   caca_put_str(caca_cv, params->x * caca_get_canvas_width(caca_cv), params->y * caca_get_canvas_height(caca_cv), msg);
-   printf("putting string at %f x %f: %s\n", params->x * caca_get_canvas_width(caca_cv), params->y * caca_get_canvas_height(caca_cv), msg);
-
-   caca_refresh_display(caca_display);
+   font_driver_render_msg(font, msg, params);
 }
 
 static const video_poke_interface_t caca_poke_interface = {
