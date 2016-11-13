@@ -125,11 +125,6 @@ if [ "$LIBRETRO" ]; then
 else LIBRETRO="-lretro"
 fi
 
-[ "$HAVE_DYNAMIC" = 'yes' ] || {
-   check_lib_cxx RETRO "$LIBRETRO" retro_init "$DYLIB" "Cannot find libretro, did you forget --with-libretro=\"-lretro\"?"
-   add_define_make libretro "$LIBRETRO"
-}
-
 if [ "$ASSETS_DIR" ]; then
    add_define_make ASSETS_DIR "$ASSETS_DIR"
 else

@@ -121,7 +121,7 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
    return pad;
 }
 
-void pad_connection_pad_deinit(joypad_connection_t *joyconn, uint32_t pad)
+void pad_connection_pad_deinit(joypad_connection_t *joyconn, unsigned pad)
 {
    if (!joyconn || !joyconn->connected)
        return;
@@ -139,8 +139,8 @@ void pad_connection_pad_deinit(joypad_connection_t *joyconn, uint32_t pad)
    joyconn->connected = false;
 }
 
-void pad_connection_packet(joypad_connection_t *joyconn, uint32_t pad,
-      uint8_t* data, uint32_t length)
+void pad_connection_packet(joypad_connection_t *joyconn, unsigned pad,
+      uint8_t* data, unsigned length)
 {
    if (!joyconn || !joyconn->connected)
        return;
