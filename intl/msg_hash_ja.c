@@ -2316,6 +2316,8 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "最高のユーザー数";
       case MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO:
          return "ゲームパッドのメニュー切り替えコンボ";
+      case MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL:
+         return "メニューのOKとキャンセルボタンをスワップ";
       case MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_MINUS:
          return "前のチートインデックス";
       case MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_PLUS:
@@ -3288,6 +3290,8 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "画面で現在のフレームレートを表示する。";
       case MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS:
          return "巻き戻し、早送り、スローモーションの設定を変更する。";
+      case MENU_ENUM_SUBLABEL_HELP_LIST:
+         return "RetroArchの使い方について学ぶ。";
       case MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST:
          return "コア、ネットワーク、システムの詳細を表示する。\nデータベースとカーソルのマネジャーを表示する。";
       case MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU:
@@ -3314,6 +3318,8 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "ネットワークの設定を変更する。";
       case MENU_ENUM_SUBLABEL_ONLINE_UPDATER:
          return "RetroArchにアドオン、コンポーネント、コンテンツをダウンロードする。";
+      case MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS:
+         return "OSDオーバーレイ、キーボードオーバーレイ、OSDメッセージの設定を変更する。";
       case MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS:
          return "プレイリストの設定を変更する。";
       case MENU_ENUM_SUBLABEL_PRIVACY_SETTINGS:
