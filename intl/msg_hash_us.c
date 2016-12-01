@@ -355,6 +355,16 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                "inside the menu and RetroArch won't \n"
                "shutdown.");
          break;
+      case MENU_ENUM_LABEL_CHECK_FOR_MISSING_FIRMWARE:
+         snprintf(s, len,
+               "Some cores might need \n"
+               "firmware or bios files. \n"
+               " \n"
+               "If this option is disabled, \n"
+               "it will try to load even if such \n"
+               "firmware is missing. \n"
+               "down. \n");
+         break;
       case MENU_ENUM_LABEL_PARENT_DIRECTORY:
          snprintf(s, len,
                "Go back to the parent directory.");
@@ -1547,6 +1557,12 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                "performance issues. Set to zero to perform \n"
                "no checks. This value is only used on the \n"
                "netplay host. \n");
+         break;
+      case MENU_ENUM_LABEL_NETPLAY_NAT_TRAVERSAL:
+         snprintf(s, len,
+               "When hosting, attempt to listen for\n"
+               "connections from the public internet, using\n"
+               "UPnP or similar technologies to escape LANs. \n");
          break;
       case MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES:
          snprintf(s, len,

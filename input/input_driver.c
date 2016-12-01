@@ -536,15 +536,12 @@ static bool check_input_driver_block_hotkey(bool enable_hotkey)
       &settings->input.binds[0][RARCH_ENABLE_HOTKEY];
    const struct retro_keybind *autoconf_bind =
       &settings->input.autoconf_binds[0][RARCH_ENABLE_HOTKEY];
-   bool kb_mapping_is_blocked                = current_input->keyboard_mapping_is_blocked &&
-         current_input->keyboard_mapping_is_blocked(current_input_data);
 
    /* Don't block the check to RARCH_ENABLE_HOTKEY
     * unless we're really supposed to. */
-   if (kb_mapping_is_blocked)
+   if (current_input->keyboard_mapping_is_blocked &&
+         current_input->keyboard_mapping_is_blocked(current_input_data))
       input_driver_block_hotkey = true;
-   else
-      input_driver_block_hotkey = false;
 
    /* If we haven't bound anything to this,
     * always allow hotkeys. */
@@ -556,14 +553,12 @@ static bool check_input_driver_block_hotkey(bool enable_hotkey)
       || (autoconf_bind->joykey  != NO_BTN)
       || (autoconf_bind->joyaxis != AXIS_NONE);
 
-   if (kb_mapping_is_blocked || (use_hotkey_enable && !enable_hotkey))
+   if (use_hotkey_enable && !enable_hotkey)
       input_driver_block_hotkey = true;
-   else
-      input_driver_block_hotkey = false;
 
    /* If we hold ENABLE_HOTKEY button, block all libretro input to allow
     * hotkeys to be bound to same keys as RetroPad. */
-   return (use_hotkey_enable && enable_hotkey);
+   return use_hotkey_enable;
 }
 
 static const unsigned buttons[] = {
@@ -680,17 +675,17 @@ static INLINE bool input_keys_pressed_internal(unsigned i,
 uint64_t input_keys_pressed(void)
 {
    unsigned i;
-   uint64_t             ret = 0;
-   settings_t     *settings = config_get_ptr();
+   uint64_t                      ret = 0;
+   settings_t              *settings = config_get_ptr();
    const struct retro_keybind *binds = settings->input.binds[0];
+   bool                enable_hotkey = current_input->input_state(current_input_data, &binds, 0,
+               RETRO_DEVICE_JOYPAD, 0, RARCH_ENABLE_HOTKEY);
 
-   if (
-         check_input_driver_block_hotkey(
-            current_input->input_state(current_input_data, &binds, 0,
-               RETRO_DEVICE_JOYPAD, 0, RARCH_ENABLE_HOTKEY)))
+   input_driver_block_libretro_input = false;
+   input_driver_block_hotkey         = false;
+
+   if (check_input_driver_block_hotkey(enable_hotkey) && enable_hotkey)
       input_driver_block_libretro_input = true;
-   else
-      input_driver_block_libretro_input = false;
 
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
    {
@@ -787,6 +782,7 @@ uint64_t input_menu_keys_pressed(void)
 {
    unsigned i;
    uint64_t             ret = 0;
+   bool enable_hotkey       = false;
    settings_t     *settings = config_get_ptr();
    const struct retro_keybind *binds[MAX_USERS] = {NULL};
 
@@ -797,14 +793,14 @@ uint64_t input_menu_keys_pressed(void)
       input_push_analog_dpad(settings->input.autoconf_binds[i],
             ANALOG_DPAD_LSTICK);
 
-   if (
-         check_input_driver_block_hotkey(
-            current_input->input_state(current_input_data, &binds[0], 0,
-               RETRO_DEVICE_JOYPAD, 0, RARCH_ENABLE_HOTKEY)))
-      input_driver_block_libretro_input = true;
-   else
-      input_driver_block_libretro_input = false;
+   enable_hotkey = current_input->input_state(current_input_data, &binds[0], 0,
+               RETRO_DEVICE_JOYPAD, 0, RARCH_ENABLE_HOTKEY);
 
+   input_driver_block_libretro_input = false;
+   input_driver_block_hotkey         = false;
+
+   if (check_input_driver_block_hotkey(enable_hotkey) && enable_hotkey)
+      input_driver_block_libretro_input = true;
 
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
    {

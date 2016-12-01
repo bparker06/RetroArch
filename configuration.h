@@ -403,6 +403,7 @@ typedef struct settings
       unsigned check_frames;
       bool is_spectate;
       bool swap_input;
+      bool nat_traversal;
    } netplay;
 #endif
 
@@ -440,6 +441,7 @@ typedef struct settings
 #endif
    bool fps_show;
    bool load_dummy_on_core_shutdown;
+   bool check_firmware_before_loading;
 
    bool game_specific_options;
    bool auto_overrides_enable;

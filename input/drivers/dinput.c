@@ -29,6 +29,10 @@
 #define WM_MOUSEWHEEL 0x020A
 #endif
 
+#define UNICODE
+#include <tchar.h>
+#include <wchar.h>
+
 #include <dinput.h>
 
 #include <stdlib.h>
@@ -203,6 +207,9 @@ void unset_doubleclick_on_titlebar(void);
 static void dinput_poll(void *data)
 {
    struct dinput_input *di = (struct dinput_input*)data;
+
+   if (!di)
+      return;
 
    memset(di->state, 0, sizeof(di->state));
    if (di->keyboard)
