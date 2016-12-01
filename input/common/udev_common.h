@@ -13,19 +13,11 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _EPOLL_COMMON_H
-#define _EPOLL_COMMON_H
-
-#include <stdint.h>
+#ifndef _UDEV_COMMON_H
+#define _UDEV_COMMON_H
 
 #include <boolean.h>
 
-bool epoll_new(int *epoll_fd);
-
-void epoll_free(int *epoll_fd);
-
-int epoll_waiting(int *epoll_fd, void *events, int maxevents, int timeout);
-
-bool epoll_add(int *epoll_fd, int fd, void *device);
+bool udev_hotplug_available(void *dev);
 
 #endif

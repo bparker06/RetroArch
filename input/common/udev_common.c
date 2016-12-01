@@ -1,4 +1,5 @@
 /*  RetroArch - A frontend for libretro.
+ *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -13,19 +14,21 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _EPOLL_COMMON_H
-#define _EPOLL_COMMON_H
+#include <stdlib.h>
 
-#include <stdint.h>
+#include <libudev.h>
 
-#include <boolean.h>
+#include <sys/poll.h>
 
-bool epoll_new(int *epoll_fd);
+#include "udev_common.h"
 
-void epoll_free(int *epoll_fd);
+bool udev_hotplug_available(void *dev)
+{
+   struct pollfd fds;
 
-int epoll_waiting(int *epoll_fd, void *events, int maxevents, int timeout);
+   fds.fd      = udev_monitor_get_fd((struct udev_monitor*)dev);
+   fds.events  = POLLIN;
+   fds.revents = 0;
 
-bool epoll_add(int *epoll_fd, int fd, void *device);
-
-#endif
+   return (poll(&fds, 1, 0) == 1) && (fds.revents & POLLIN);
+}

@@ -23,7 +23,6 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/poll.h>
 #include <libudev.h>
 #include <linux/types.h>
 #include <linux/input.h>
@@ -34,6 +33,9 @@
 
 #include "../input_autodetect.h"
 #include "../input_driver.h"
+
+#include "../common/udev_common.h"
+
 #include "../../configuration.h"
 #include "../../runloop.h"
 #include "../../verbosity.h"
@@ -160,19 +162,6 @@ static void udev_poll_pad(struct udev_joypad *pad, unsigned p)
    }
 }
 
-static bool udev_hotplug_available(void)
-{
-   struct pollfd fds = {0};
-
-   if (!g_udev_mon)
-      return false;
-
-   fds.fd     = udev_monitor_get_fd(g_udev_mon);
-   fds.events = POLLIN;
-
-   return (poll(&fds, 1, 0) == 1) && (fds.revents & POLLIN);
-}
-
 static int udev_find_vacant_pad(void)
 {
    unsigned i;
@@ -291,7 +280,7 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
    pad->fd     = fd;
    pad->path   = strdup(path);
 
-   if (*pad->ident)
+   if (!string_is_empty(pad->ident))
    {
       params.idx = p;
       strlcpy(params.name, pad->ident, sizeof(params.name));
@@ -517,7 +506,7 @@ static void udev_joypad_poll(void)
 {
    unsigned i;
 
-   while (udev_hotplug_available())
+   while (g_udev_mon && udev_hotplug_available(g_udev_mon))
    {
       struct udev_device *dev = udev_monitor_receive_device(g_udev_mon);
       if (dev)
@@ -647,10 +636,10 @@ static bool udev_joypad_query_pad(unsigned pad)
 
 static const char *udev_joypad_name(unsigned pad)
 {
-   if (pad >= MAX_USERS)
+   if (pad >= MAX_USERS || string_is_empty(udev_pads[pad].ident))
       return NULL;
 
-   return *udev_pads[pad].ident ? udev_pads[pad].ident : NULL;
+   return udev_pads[pad].ident;
 }
 
 input_device_driver_t udev_joypad = {
