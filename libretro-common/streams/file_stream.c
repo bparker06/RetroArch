@@ -213,8 +213,11 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
    {
 #ifdef _WIN32
       CHAR_TO_WCHAR_ALLOC(path, path_wide)
-      stream->fp = _tfopen(path_wide, mode_str);
-
+#ifdef UNICODE
+      stream->fp = _wfopen(path_wide, mode_str);
+#else
+      stream->fp = fopen(path_wide, mode_str);
+#endif
       if (path_wide)
          free(path_wide);
 #else

@@ -199,9 +199,6 @@ bool mkdir_norecurse(const char *dir)
 #if defined(_WIN32)
    CHAR_TO_WCHAR_ALLOC(dir, dir_wide)
 
-#ifdef _MSC_VER
-   ret = _tmkdir(dir_wide);
-#else
 #ifdef UNICODE
    ret = _wmkdir(dir_wide);
 #else
@@ -210,7 +207,6 @@ bool mkdir_norecurse(const char *dir)
 
    if (dir_wide)
       free(dir_wide);
-#endif
 #elif defined(IOS)
    ret = mkdir(dir, 0755);
 #elif defined(VITA) || defined(PSP)
