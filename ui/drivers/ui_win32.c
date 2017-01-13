@@ -354,6 +354,7 @@ void shader_dlg_show(HWND parent_hwnd)
    window->set_focused(&g_shader_dlg.window);
 }
 
+#if defined(HAVE_OPENGL) || defined(HAVE_VULKAN)
 static LRESULT CALLBACK ShaderDlgWndProc(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
@@ -427,6 +428,7 @@ static LRESULT CALLBACK ShaderDlgWndProc(HWND hwnd, UINT message,
 
    return DefWindowProc(hwnd, message, wparam, lparam);
 }
+#endif
 
 bool win32_window_init(WNDCLASSEX *wndclass,
       bool fullscreen, const char *class_name)
@@ -461,6 +463,7 @@ bool win32_window_init(WNDCLASSEX *wndclass,
 
 bool win32_shader_dlg_init(void)
 {
+#if defined(HAVE_OPENGL) || defined(HAVE_VULKAN)
    static bool inited = false;
    int pos_y;
    HFONT hFont;
@@ -508,7 +511,7 @@ bool win32_shader_dlg_init(void)
    pos_y +=  SHADER_DLG_SEPARATOR_HEIGHT + SHADER_DLG_CTRL_MARGIN;
 
    g_shader_dlg.parameters_start_y = pos_y;
-
+#endif
    return true;
 }
 
