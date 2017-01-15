@@ -28,6 +28,7 @@
 #include <formats/image.h>
 #include <gfx/math/matrix_4x4.h>
 #include <string/stdstring.h>
+#include <lists/file_list.h>
 #include <lists/string_list.h>
 #include <encodings/utf.h>
 
@@ -130,6 +131,13 @@ typedef struct mui_handle
    video_font_raster_block_t raster_block2;
    float scroll_y;
 } mui_handle_t;
+
+typedef struct mui_node
+{
+   unsigned height;
+} mui_node_t;
+
+static file_list_t *node_list = NULL;
 
 static void hex32_to_rgba_normalized(uint32_t hex, float* rgba, float alpha)
 {
@@ -577,7 +585,8 @@ static void mui_render(void *data)
 static void mui_render_label_value(mui_handle_t *mui,
       int i, int y, unsigned width, unsigned height,
       uint64_t index, uint32_t color, bool selected, const char *label,
-      const char *value, float *label_color)
+      const char *value, const char *sublabel_str, float *label_color,
+      float scale_factor)
 {
    /* This will be used instead of label_color if texture_switch is 'off' icon */
    float pure_white[16]=  {
@@ -589,7 +598,6 @@ static void mui_render_label_value(mui_handle_t *mui,
 
    menu_animation_ctx_ticker_t ticker;
    char label_str[255];
-   char sublabel_str[255];
    char value_str[255];
    uint32_t sublabel_color;
    float label_offset              = 0;
@@ -599,7 +607,10 @@ static void mui_render_label_value(mui_handle_t *mui,
    uintptr_t texture_switch        = 0;
    bool do_draw_text               = false;
    size_t usable_width             = width - (mui->margin * 2);
-   label_str[0] = value_str[0] = sublabel_str[0] = '\0';
+   unsigned lines                  = 0;
+   unsigned line_height            = 0;
+
+   label_str[0] = value_str[0] = '\0';
 
 #ifdef VITA
    sublabel_color = 0xff888888;
@@ -627,18 +638,27 @@ static void mui_render_label_value(mui_handle_t *mui,
    menu_animation_ctl(MENU_ANIMATION_CTL_TICKER, &ticker);
 
    label_offset = mui->font->size / 3;
-   if (menu_entry_get_sublabel(i, sublabel_str, sizeof(sublabel_str)))
+
+   if (i > 0)
+      lines = node_list->list[i - 1].type;
+   else
+      lines = node_list->list[i].type;
+
+   line_height = scale_factor / 2.5 * lines;
+
+   if (*sublabel_str)
    {
       label_offset = -mui->font->size / 3;
+
       menu_display_draw_text(mui->font2, sublabel_str,
             mui->margin,
-            y + mui->line_height / 2 + mui->font->size / 1,
+            y + line_height / (lines + 1) + mui->font->size / 1,
             width, height, sublabel_color, TEXT_ALIGN_LEFT, 1.0f, false, 0);
    }
 
    menu_display_draw_text(mui->font, label_str,
          mui->margin,
-         y + mui->line_height / 2 + label_offset,
+         y + line_height / (lines + 1) + label_offset,
          width, height, color, TEXT_ALIGN_LEFT, 1.0f, false, 0);
 
    if (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)) ||
@@ -708,7 +728,7 @@ static void mui_render_label_value(mui_handle_t *mui,
    if (do_draw_text)
       menu_display_draw_text(mui->font, value_str,
             width - mui->margin,
-            y + mui->line_height / 2 + mui->font->size / 3,
+            y + line_height / 2 + mui->font->size / 3,
             width, height, color, TEXT_ALIGN_RIGHT, 1.0f, false, 0);
 
    if (texture_switch)
@@ -733,8 +753,10 @@ static void mui_render_menu_list(mui_handle_t *mui,
 {
    unsigned header_height;
    uint64_t *frame_count;
-   size_t i                = 0;
-   size_t          end     = menu_entries_get_end();
+   size_t i = 0;
+   size_t end = menu_entries_get_end();
+   float scale_factor = menu_display_get_dpi();
+
    frame_count             = video_driver_get_frame_count_ptr();
 
    if (!menu_display_get_update_pending())
@@ -747,18 +769,56 @@ static void mui_render_menu_list(mui_handle_t *mui,
 
    menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &i);
 
+   file_list_clear(node_list);
+
    for (; i < end; i++)
    {
       int y;
       size_t selection;
       char rich_label[255];
       char entry_value[255];
+      char sublabel_str[255];
       bool entry_selected = false;
+      unsigned line_height = 0;
 
-      rich_label[0] = entry_value[0] = '\0';
+      rich_label[0] = entry_value[0] = sublabel_str[0] = '\0';
 
       if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
          continue;
+
+      menu_entry_get_value(i, NULL, entry_value, sizeof(entry_value));
+
+      if (menu_entry_get_sublabel(i, sublabel_str, sizeof(sublabel_str)))
+      {
+         unsigned lines = 0;
+
+         char *chr = sublabel_str;
+
+         while (*chr)
+         {
+            if (*chr == '.')
+            {
+               *chr = '\n';
+               lines++;
+            }
+            chr++;
+         }
+
+         if (lines == 0)
+            lines = 1;
+
+         line_height = lines;
+
+         file_list_append(node_list, entry_value, sublabel_str,
+               line_height, 0, 0);
+      }
+      else
+      {
+         line_height = 1;
+
+         file_list_append(node_list, entry_value, sublabel_str,
+               line_height, 0, 0);
+      }
 
       y = header_height - mui->scroll_y + (mui->line_height * i);
 
@@ -766,7 +826,6 @@ static void mui_render_menu_list(mui_handle_t *mui,
             || ((y + (int)mui->line_height) < 0))
          continue;
 
-      menu_entry_get_value(i, NULL, entry_value, sizeof(entry_value));
       menu_entry_get_rich_label(i, rich_label, sizeof(rich_label));
 
       entry_selected = selection == i;
@@ -782,7 +841,9 @@ static void mui_render_menu_list(mui_handle_t *mui,
          entry_selected,
          rich_label,
          entry_value,
-         menu_list_color
+         sublabel_str,
+         menu_list_color,
+         scale_factor
       );
    }
 }
@@ -1409,6 +1470,8 @@ static void *mui_init(void **userdata)
 
    mui->cursor.size  = 64.0;
 
+   node_list = (file_list_t*)calloc(1, sizeof(file_list_t));
+
    return menu;
 error:
    if (menu)
@@ -1427,6 +1490,8 @@ static void mui_free(void *data)
    video_coord_array_free(&mui->raster_block2.carr);
 
    font_driver_bind_block(NULL, NULL);
+
+   file_list_free(node_list);
 }
 
 static void mui_context_bg_destroy(mui_handle_t *mui)
@@ -1691,6 +1756,7 @@ static int mui_list_push(void *data, void *userdata,
    int ret                = -1;
    core_info_list_t *list = NULL;
    menu_handle_t *menu    = (menu_handle_t*)data;
+   size_t end             = 0;
 
    (void)userdata;
 
@@ -1789,6 +1855,7 @@ static int mui_list_push(void *data, void *userdata,
          ret = 0;
          break;
    }
+
    return ret;
 }
 
