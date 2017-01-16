@@ -399,16 +399,22 @@ static void mui_draw_tab_end(mui_handle_t *mui,
 static void mui_draw_scrollbar(mui_handle_t *mui,
       unsigned width, unsigned height, float *coord_color)
 {
-   unsigned header_height;
-   float content_height, total_height,
+   unsigned header_height, i, end;
+   float content_height = 0, total_height, scale_factor,
          scrollbar_height, scrollbar_margin, y;
 
    if (!mui)
       return;
 
+   scale_factor     = menu_display_get_dpi();
+   end              = menu_entries_get_end();
    header_height    = menu_display_get_header_height();
 
-   content_height   = menu_entries_get_end() * mui->line_height;
+   for (i = 0; i < end; i++)
+   {
+      content_height += scale_factor / 2.5 * node_list->list[i].type;
+   }
+
    total_height     = height - header_height - mui->tabs_height;
    scrollbar_margin = mui->scrollbar_width;
    scrollbar_height = total_height / (content_height / total_height);
@@ -514,11 +520,15 @@ static void mui_render(void *data)
    menu_animation_ctx_delta_t delta;
    float delta_time;
    unsigned bottom, width, height, header_height;
+   unsigned node_i, end, bottom_height = 0;
    mui_handle_t *mui    = (mui_handle_t*)data;
    settings_t *settings = config_get_ptr();
+   float scale_factor = menu_display_get_dpi();
 
    if (!mui)
       return;
+
+   end = menu_entries_get_end();
 
    video_driver_get_size(&width, &height);
 
@@ -566,16 +576,22 @@ static void mui_render(void *data)
    if (mui->scroll_y < 0)
       mui->scroll_y = 0;
 
-   bottom = menu_entries_get_end() * mui->line_height
+   for (node_i = 0; node_i < end; node_i++)
+   {
+      if (node_list->size > node_i)
+         bottom_height += scale_factor / 2.5 * node_list->list[node_i].type;
+   }
+
+   bottom = bottom_height
       - height + header_height + mui->tabs_height;
    if (mui->scroll_y > bottom)
       mui->scroll_y = bottom;
 
-   if (menu_entries_get_end() * mui->line_height
+   if (bottom_height
          < height - header_height - mui->tabs_height)
       mui->scroll_y = 0;
 
-   if (menu_entries_get_end() < height / mui->line_height) { }
+   if (end < height / mui->line_height) { }
    else
       i = mui->scroll_y / mui->line_height;
 
@@ -728,7 +744,7 @@ static void mui_render_label_value(mui_handle_t *mui,
    if (do_draw_text)
       menu_display_draw_text(mui->font, value_str,
             width - mui->margin,
-            y + line_height / 2 + mui->font->size / 3,
+            y + line_height / (lines + 1) + mui->font->size / 3,
             width, height, color, TEXT_ALIGN_RIGHT, 1.0f, false, 0);
 
    if (texture_switch)
@@ -756,6 +772,7 @@ static void mui_render_menu_list(mui_handle_t *mui,
    size_t i = 0;
    size_t end = menu_entries_get_end();
    float scale_factor = menu_display_get_dpi();
+   unsigned node_y = 0;
 
    frame_count             = video_driver_get_frame_count_ptr();
 
@@ -807,23 +824,25 @@ static void mui_render_menu_list(mui_handle_t *mui,
          if (lines == 0)
             lines = 1;
 
-         line_height = lines;
+         line_height = scale_factor / 2.5 * lines;
 
          file_list_append(node_list, entry_value, sublabel_str,
-               line_height, 0, 0);
+               lines, 0, 0);
       }
       else
       {
-         line_height = 1;
+         line_height = mui->line_height;
 
          file_list_append(node_list, entry_value, sublabel_str,
-               line_height, 0, 0);
+               1, 0, 0);
       }
 
-      y = header_height - mui->scroll_y + (mui->line_height * i);
+      y = header_height - mui->scroll_y + node_y;
 
-      if ((y - (int)mui->line_height) > (int)height
-            || ((y + (int)mui->line_height) < 0))
+      node_y += line_height;
+
+      if ((y - (int)line_height) > (int)height
+            || ((y + (int)line_height) < 0))
          continue;
 
       menu_entry_get_rich_label(i, rich_label, sizeof(rich_label));
@@ -1016,6 +1035,9 @@ static void mui_frame(void *data)
    settings_t *settings            = config_get_ptr();
    bool background_rendered        = false;
    bool libretro_running           = menu_display_libretro_running();
+   float scale_factor              = menu_display_get_dpi();
+   unsigned node_i                 = 0;
+   unsigned node_y                 = 0;
 
    /* Default is blue theme */
    float *header_bg_color          = NULL;
@@ -1250,17 +1272,6 @@ static void mui_frame(void *data)
    else
       menu_display_set_alpha(blue_50, 1.0);
 
-   /* highlighted entry */
-   menu_display_draw_quad(
-      0,
-      header_height - mui->scroll_y + mui->line_height *selection,
-      width,
-      mui->line_height,
-      width,
-      height,
-      &highlighted_entry_color[0]
-   );
-
    menu_display_font_bind_block(mui->font, &mui->raster_block);
    menu_display_font_bind_block(mui->font2, &mui->raster_block2);
 
@@ -1271,6 +1282,22 @@ static void mui_frame(void *data)
       font_normal_color,
       font_hover_color,
       &active_tab_marker_color[0]
+   );
+
+   for (; node_i < selection; node_i++)
+   {
+      node_y += scale_factor / 2.5 * node_list->list[node_i].type;
+   }
+
+   /* highlighted entry */
+   menu_display_draw_quad(
+      0,
+      header_height - mui->scroll_y + mui->line_height * selection,
+      width,
+      mui->line_height,
+      width,
+      height,
+      &highlighted_entry_color[0]
    );
 
    menu_display_font_flush_block(mui->font);
@@ -1343,7 +1370,7 @@ static void mui_frame(void *data)
       int ticker_limit, value_len;
       char title_buf_msg_tmp[255];
       char title_buf_msg[255];
-      size_t         usable_width = width - (mui->margin * 2);
+      size_t usable_width = width - (mui->margin * 2);
 
       title_buf_msg_tmp[0] = title_buf_msg[0] = '\0';
 
@@ -1544,29 +1571,52 @@ static bool mui_load_image(void *userdata, void *data, enum menu_image_type type
 static float mui_get_scroll(mui_handle_t *mui)
 {
    size_t selection;
-   unsigned width, height, half = 0;
+   unsigned width, height, line_height;
+   unsigned i, end, half = 0;
+   unsigned new_height = 0, cur_height = 0;
+   float scale_factor = menu_display_get_dpi();
 
    if (!mui)
       return 0;
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return 0;
 
+   end = menu_entries_get_end();
+
+   if (node_list->size < end)
+      return 0;
+
    video_driver_get_size(&width, &height);
 
-   if (mui->line_height)
-      half = (height / mui->line_height) / 2;
+   /* Find the item that starts after the half-way point.
+    * This determines when to scroll the view. */
+   for (i = 0; i < end; i++)
+   {
+      cur_height += scale_factor / 2.5 * node_list->list[i].type;
+
+      if (cur_height >= height / 2)
+      {
+         half = i;
+         break;
+      }
+   }
 
    if (selection < half)
       return 0;
 
-   return ((selection + 2 - half) * mui->line_height);
+   for (i = 0; i < selection + 2 - half; i++)
+   {
+      new_height += scale_factor / 2.5 * node_list->list[i].type;
+   }
+
+   return new_height;
 }
 
 static void mui_navigation_set(void *data, bool scroll)
 {
    menu_animation_ctx_entry_t entry;
-   mui_handle_t *mui    = (mui_handle_t*)data;
-   float     scroll_pos = mui ? mui_get_scroll(mui) : 0.0f;
+   mui_handle_t *mui  = (mui_handle_t*)data;
+   float scroll_pos   = mui ? mui_get_scroll(mui) : 0.0f;
 
    if (!mui || !scroll)
       return;
@@ -1581,7 +1631,7 @@ static void mui_navigation_set(void *data, bool scroll)
    menu_animation_ctl(MENU_ANIMATION_CTL_PUSH, &entry);
 }
 
-static void  mui_list_set_selection(void *data, file_list_t *list)
+static void mui_list_set_selection(void *data, file_list_t *list)
 {
    mui_navigation_set(data, true);
 }
