@@ -174,7 +174,7 @@ retro_perf_tick_t cpu_features_get_perf_counter(void)
    time_ticks = svcGetSystemTick();
 #elif defined(WIIU)
    time_ticks = OSGetSystemTime();
-#elif defined(__mips__)
+#elif defined(__mips__) || defined(DJGPP)
    struct timeval tv;
    gettimeofday(&tv,NULL);
    time_ticks = (1000000 * tv.tv_sec + tv.tv_usec);
