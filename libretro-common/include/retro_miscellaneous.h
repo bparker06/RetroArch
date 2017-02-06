@@ -94,7 +94,7 @@ static int nanosleepDOS(const struct timespec *rqtp, struct timespec *rmtp)
    usleep(1000000 * rqtp->tv_sec + rqtp->tv_nsec / 1000);
 
    if (rmtp)
-      rmtp->tv_sec = rmtp->tv_nsec=0;
+      rmtp->tv_sec = rmtp->tv_nsec = 0;
 
    return 0;
 }

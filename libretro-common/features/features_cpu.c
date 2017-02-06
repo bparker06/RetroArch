@@ -121,6 +121,69 @@ static int ra_clock_gettime(int clk_ik, struct timespec *t)
 #include <sys/sysctl.h>
 #endif
 
+#ifdef DJGPP
+#include <dpmi.h>
+#include <go32.h>
+#include <dos.h>
+
+#define TWO_BYTE_MODE_2 0x34 /* timer 0,2-byte read/write,mode 2, binary */
+#define TIMER_0_PORT 0x40 /* Timer 0 data port address */
+#define TIMER_MODE 0x43 /* Timer mode port address */
+#define BIOS_TICK_SEG 0x40 /* BIOS data segment */
+#define BIOS_TICK_OFF 0x6c /* Address of BIOS (18.2/s) tick count */
+#define SCALE 10000 /* Scale factor for timer ticks */
+#define PITCONST 1193180L
+#define HZ 60
+
+/* The following assumes 18.2 BIOS ticks per second resulting from
+   the 8253 being clocked at 1.19 MHz. */
+#define us_BTIK 54925 /* Micro sec per BIOS clock tick */
+#define f_BTIK 4595 /* Fractional part of usec per BIOS tick */
+#define us_TTIK 8381 /* Usec per timer tick * SCALE. (4/4.77 MHz) */
+
+static _go32_dpmi_seginfo old_clk_int;
+static _go32_dpmi_seginfo clk_int;
+static retro_time_t clock_tick;
+
+/* Do not move or remove. clock_start and clock_int must stay in the same order
+ * for the DPMI memory locking to work. */
+static void clock_start(void)
+{
+}
+
+/* Do not move. */
+static void clock_int(void)
+{
+   __asm__ volatile ("cli; pusha");
+   clock_tick++;
+   outportb(0x20, 0x20);
+   __asm__ volatile ("popa; sti");
+}
+
+static uint32_t uclock_read(void)
+{
+   unsigned char msb, lsb;
+   unsigned int tim_ticks, count;
+
+   __asm__ volatile ("cli");
+
+   outportb(TIMER_MODE, 0); /* Latch count. */
+
+   lsb = (unsigned char)inportb(TIMER_0_PORT); /* Read count. */
+   msb = (unsigned char)inportb(TIMER_0_PORT);
+
+   /* Get BIOS tick count */
+   dosmemget(BIOS_TICK_SEG * 16 + BIOS_TICK_OFF, sizeof(unsigned int), &count);
+
+   __asm__ volatile ("sti");
+
+   /* Merge PIT channel 0 count with BIOS tick count */
+   tim_ticks = (unsigned)(-1) - ((msb << 8) | lsb);
+
+   return (count * us_BTIK) + ((int)tim_ticks * us_TTIK + (count * us_BTIK) % SCALE) / SCALE;
+}
+#endif
+
 #include <string.h>
 
 /**
@@ -153,7 +216,8 @@ retro_perf_tick_t cpu_features_get_perf_counter(void)
    if (ra_clock_gettime(CLOCK_MONOTONIC, &tv) == 0)
       time_ticks = (retro_perf_tick_t)tv.tv_sec * 1000000000 +
          (retro_perf_tick_t)tv.tv_nsec;
-
+#elif defined(DJGPP)
+   time_ticks = clock_tick;
 #elif defined(__GNUC__) && defined(__i386__) || defined(__i486__) || defined(__i686__)
    __asm__ volatile ("rdtsc" : "=A" (time_ticks));
 #elif defined(__GNUC__) && defined(__x86_64__)
@@ -174,7 +238,7 @@ retro_perf_tick_t cpu_features_get_perf_counter(void)
    time_ticks = svcGetSystemTick();
 #elif defined(WIIU)
    time_ticks = OSGetSystemTime();
-#elif defined(__mips__) || defined(DJGPP)
+#elif defined(__mips__)
    struct timeval tv;
    gettimeofday(&tv,NULL);
    time_ticks = (1000000 * tv.tv_sec + tv.tv_usec);
@@ -214,7 +278,7 @@ retro_time_t cpu_features_get_time_usec(void)
    return tv.tv_sec * INT64_C(1000000) + (tv.tv_nsec + 500) / 1000;
 #elif defined(EMSCRIPTEN)
    return emscripten_get_now() * 1000;
-#elif defined(__mips__) || defined(DJGPP)
+#elif defined(__mips__)
    struct timeval tv;
    gettimeofday(&tv,NULL);
    return (1000000 * tv.tv_sec + tv.tv_usec);
@@ -224,6 +288,42 @@ retro_time_t cpu_features_get_time_usec(void)
    return sceKernelGetProcessTimeWide();
 #elif defined(WIIU)
    return ticks_to_us(OSGetSystemTime());
+#elif defined(DJGPP)
+   /* gettimeofday lies about its msec granularity as it runs off the standard 18hz DOS timer,
+    * so we reprogram the PIT to tick faster and read from that instead. */
+   static bool needs_init = true;
+
+   if (needs_init)
+   {
+      unsigned int pit0_set, pit0_value;
+
+      needs_init = false;
+
+      _go32_dpmi_lock_code(clock_int, (unsigned int)clock_int - (unsigned int)clock_start);
+      _go32_dpmi_lock_data(&clock_tick, sizeof(clock_tick));
+      _go32_dpmi_get_protected_mode_interrupt_vector(8, &old_clk_int);
+
+      clk_int.pm_offset = (int)clock_int;
+      clk_int.pm_selector = _go32_my_cs();
+
+      _go32_dpmi_chain_protected_mode_interrupt_vector(8, &clk_int);
+
+      __asm__ volatile ("cli");
+      outportb(TIMER_MODE, TWO_BYTE_MODE_2);
+
+      pit0_value = PITCONST / HZ;
+      pit0_set = (pit0_value & 0x00ff);
+
+      outportb(TIMER_0_PORT, pit0_set);
+
+      pit0_set = (pit0_value >> 8);
+
+      outportb(TIMER_0_PORT, pit0_set);
+
+      __asm__ volatile ("sti");
+   }
+
+   return uclock_read();
 #else
 #error "Your platform does not have a timer function implemented in cpu_features_get_time_usec(). Cannot continue."
 #endif

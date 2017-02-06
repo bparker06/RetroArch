@@ -41,13 +41,8 @@
 
 static uint16_t normal_keys[LAST_KEYCODE + 1];
 
-static void (*old_clk_func)(void);
-
 static _go32_dpmi_seginfo old_kbd_int;
 static _go32_dpmi_seginfo kbd_int;
-
-static _go32_dpmi_seginfo old_clk_int;
-static _go32_dpmi_seginfo clk_int;
 
 int LockData(void *a, int size)
 {
@@ -92,6 +87,8 @@ static void keyb_int(void)
    unsigned char make_break;
    int scancode;
 
+   disable();
+
    rawcode = inp(0x60); /* read scancode from keyboard controller */
    make_break = !(rawcode & 0x80); /* bit 7: 0 = make, 1 = break */
    scancode = rawcode & 0x7F;
@@ -120,105 +117,76 @@ static void keyb_int(void)
    }
 
    outp(0x20, 0x20); /* must send EOI to finish interrupt */
+   enable();
 }
 END_FUNC(keyb_int)
 
-static void clock_int(void)
+/*static void clock_int(void)
 {
    static int callmod = 0;
 
+   disable();
+
    callmod = (callmod + 1) % 64;
 
-   /* call the original 18.2Hz timer handler every 64 ticks */
-   if (callmod == 0)
-      old_clk_func();
-   else
-      outp(0x20, 0x20);
+   // call the original 18.2Hz timer handler every 64 ticks
+   //if (callmod == 0)
+   //  old_clk_func();
+   //else
+   //   outp(0x20, 0x20);
+
+   outp(0x20, 0x20);
+   enable();
 }
-END_FUNC(clock_int)
+END_FUNC(clock_int)*/
 
 static void hook_keyb_int(void)
 {
-   disable();
-
    _go32_dpmi_get_protected_mode_interrupt_vector(9, &old_kbd_int);
 
-   memset(&kbd_int, 0, sizeof(kbd_int));
+   //memset(&kbd_int, 0, sizeof(kbd_int));
    memset(normal_keys, 0, sizeof(normal_keys));
 
-   LOCK_FUNC(keyb_int);
-   LOCK_VAR(normal_keys);
-
    kbd_int.pm_selector = _go32_my_cs();
-   kbd_int.pm_offset = (uint32_t)&keyb_int;
+   kbd_int.pm_offset = (int)keyb_int;
 
    _go32_dpmi_allocate_iret_wrapper(&kbd_int);
 
    _go32_dpmi_set_protected_mode_interrupt_vector(9, &kbd_int);
 
-   enable();
+   LOCK_FUNC(keyb_int);
+   LOCK_VAR(normal_keys);
 }
 
 static void unhook_keyb_int(void)
 {
-   disable();
-
    if (old_kbd_int.pm_offset)
    {
       _go32_dpmi_set_protected_mode_interrupt_vector(9, &old_kbd_int);
       _go32_dpmi_free_iret_wrapper(&kbd_int);
 
-      memset(&old_kbd_int, 0, sizeof(old_kbd_int));
+      //memset(&old_kbd_int, 0, sizeof(old_kbd_int));
    }
-
-   enable();
 }
 
-static void hook_clock_int(void)
+/*static void unhook_clock_int(void)
 {
-   disable();
-
-   _go32_dpmi_get_protected_mode_interrupt_vector(8, &old_clk_int);
-
-   memset(&clk_int, 0, sizeof(clk_int));
-
-   LOCK_FUNC(clock_int);
-   LOCK_VAR(old_clk_func);
-
-   old_clk_func = (void*)old_clk_int.pm_offset;
-
-   clk_int.pm_selector = _go32_my_cs();
-   clk_int.pm_offset = (uint32_t)&clock_int;
-
-   _go32_dpmi_allocate_iret_wrapper(&clk_int);
-
-   _go32_dpmi_set_protected_mode_interrupt_vector(8, &clk_int);
-
-   outportb(0x43, 0x36);
-   outportb(0x40, 0x0);
-   outportb(0x40, 0x4);
-
-   enable();
-}
-
-static void unhook_clock_int(void)
-{
-   disable();
-
    if (old_clk_int.pm_offset)
    {
       _go32_dpmi_set_protected_mode_interrupt_vector(8, &old_clk_int);
-      _go32_dpmi_free_iret_wrapper(&clk_int);
+      //_go32_dpmi_free_iret_wrapper(&clk_int);
 
-      memset(&old_clk_int, 0, sizeof(old_clk_int));
+      //memset(&old_clk_int, 0, sizeof(old_clk_int));
    }
+
+   disable();
 
    outportb(0x43, 0x36);
    outportb(0x40, 0x0);
    outportb(0x40, 0x0);
 
    enable();
-}
+}*/
 
 static const char *dos_joypad_name(unsigned pad)
 {
@@ -242,7 +210,7 @@ static bool dos_joypad_init(void *data)
 {
    hook_keyb_int();
 
-   hook_clock_int();
+   //hook_clock_int();
 
    dos_joypad_autodetect_add(0);
 
@@ -320,7 +288,7 @@ static int16_t dos_joypad_axis(unsigned port_num, uint32_t joyaxis)
 
 static void dos_joypad_destroy(void)
 {
-   unhook_clock_int();
+   //unhook_clock_int();
    unhook_keyb_int();
 }
 
