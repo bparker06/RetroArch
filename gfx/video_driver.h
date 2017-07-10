@@ -98,7 +98,8 @@ enum gfx_ctx_api
    GFX_CTX_DIRECT3D9_API,
    GFX_CTX_OPENVG_API,
    GFX_CTX_VULKAN_API,
-   GFX_CTX_GDI_API
+   GFX_CTX_GDI_API,
+   GFX_CTX_FPGA_API
 };
 
 enum display_metric_types
@@ -1265,6 +1266,7 @@ extern video_driver_t video_xshm;
 extern video_driver_t video_caca;
 extern video_driver_t video_gdi;
 extern video_driver_t video_vga;
+extern video_driver_t video_fpga;
 extern video_driver_t video_null;
 
 extern const gfx_ctx_driver_t gfx_ctx_osmesa;
@@ -1287,8 +1289,8 @@ extern const gfx_ctx_driver_t gfx_ctx_emscripten;
 extern const gfx_ctx_driver_t gfx_ctx_opendingux_fbdev;
 extern const gfx_ctx_driver_t gfx_ctx_khr_display;
 extern const gfx_ctx_driver_t gfx_ctx_gdi;
+extern const gfx_ctx_driver_t gfx_ctx_fpga;
 extern const gfx_ctx_driver_t gfx_ctx_null;
-
 
 extern const shader_backend_t gl_glsl_backend;
 extern const shader_backend_t hlsl_backend;

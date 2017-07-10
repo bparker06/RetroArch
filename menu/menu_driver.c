@@ -113,6 +113,9 @@ static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
 #ifdef DJGPP
    &menu_display_ctx_vga,
 #endif
+#ifdef HAVE_FPGA
+   &menu_display_ctx_fpga,
+#endif
    &menu_display_ctx_null,
    NULL,
 };
@@ -241,6 +244,10 @@ static bool menu_display_check_compatibility(
          break;
       case MENU_VIDEO_DRIVER_VGA:
          if (string_is_equal_fast(video_driver, "vga", 3))
+            return true;
+         break;
+      case MENU_VIDEO_DRIVER_FPGA:
+         if (string_is_equal_fast(video_driver, "fpga", 3))
             return true;
          break;
    }

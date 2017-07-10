@@ -306,6 +306,9 @@ static const video_driver_t *video_drivers[] = {
 #ifdef DJGPP
    &video_vga,
 #endif
+#ifdef HAVE_FPGA
+   &video_fpga,
+#endif
    &video_null,
    NULL,
 };
@@ -372,6 +375,9 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 #endif
 #if defined(_WIN32) && !defined(_XBOX)
    &gfx_ctx_gdi,
+#endif
+#if defined(HAVE_FPGA)
+   &gfx_ctx_fpga,
 #endif
    &gfx_ctx_null,
    NULL
