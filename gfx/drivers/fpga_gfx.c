@@ -38,84 +38,10 @@
 
 typedef struct RegOp {
   int fd;
-  unsigned Addr;
-  int size;
-  unsigned mmap_size;
-  int dir;
-  unsigned val;
   void *ptr;
   int only_mmap;
   int only_munmap;
-  unsigned page_offset;
 } RegOp;
-
-static void do_mmap_op(RegOp *regOp) {
-   unsigned page_addr;
-   unsigned page_size = sysconf(_SC_PAGESIZE);
-
-   if (regOp->only_munmap == 0)
-   {
-      regOp->fd = open("/dev/mem", O_RDWR);
-
-      if (regOp->fd < 1)
-      {
-         regOp->val = 0;
-         return;
-      }
-
-      page_addr = (regOp->Addr & (~(page_size-1)));
-      regOp->page_offset = regOp->Addr - page_addr;
-
-      if (!regOp->mmap_size)
-      {
-         regOp->mmap_size = page_size;
-      }
-
-      regOp->ptr = mmap(NULL, regOp->mmap_size, PROT_READ|PROT_WRITE, MAP_SHARED, regOp->fd, page_addr);
-
-      if (regOp->ptr == MAP_FAILED)
-      {
-         RARCH_ERR("could not mmap() memory\n");
-         exit(1);
-      }
-   }
-
-   if (regOp->only_mmap == 0 && regOp->only_munmap == 0)
-   {
-      if (regOp->dir == 0)
-      {
-         regOp->val = *((volatile unsigned*)((volatile unsigned char*)regOp->ptr + regOp->page_offset));
-      }
-      else
-      {
-         if (regOp->size == 8)
-         {
-            *((volatile unsigned char*)((volatile unsigned char*)regOp->ptr + regOp->page_offset)) = regOp->val;
-         }
-         else if (regOp->size == 16)
-         {
-            *((volatile unsigned short*)((volatile unsigned char*)regOp->ptr + regOp->page_offset)) = regOp->val;
-         }
-         else if (regOp->size == 32)
-         {
-            *((volatile unsigned*)((volatile unsigned char*)regOp->ptr + regOp->page_offset)) = regOp->val;
-         }
-      }
-   }
-
-   if (regOp->only_mmap == 0)
-   {
-      if (munmap(regOp->ptr, page_size) == -1)
-      {
-         RARCH_ERR("could not munmap() memory\n");
-         exit(1);
-      }
-
-      close(regOp->fd);
-   }
-
-   return;
-}
 
 static unsigned char *fpga_menu_frame = NULL;
 static unsigned fpga_menu_width       = 0;
@@ -130,17 +56,68 @@ static bool fpga_rgb32                = false;
 static bool fpga_menu_rgb32           = false;
 static RegOp regOp;
 
+static unsigned int get_memory_size()
+{
+   FILE *size_fp;
+   unsigned int size;
+
+   /* this file holds the memory range needed to map the framebuffer into
+    * kernel address space, it is specified in the device tree
+    */
+   size_fp = fopen("/sys/class/uio/uio0/maps/map0/size", "r");
+
+   if (!size_fp)
+   {
+      RARCH_ERR("unable to open the uio size file\n");
+      exit(1);
+   }
+
+   fscanf(size_fp, "0x%08X", &size);
+   fclose(size_fp);
+
+   return size;
+}
+
+static void do_mmap_op(RegOp *regOp) {
+   if (regOp->only_munmap == 0)
+   {
+      regOp->fd = open("/dev/uio0", O_RDWR);
+
+      if (regOp->fd < 1)
+         return;
+
+      regOp->ptr = mmap(NULL, get_memory_size(), PROT_READ|PROT_WRITE, MAP_SHARED, regOp->fd, 0);
+
+      if (regOp->ptr == MAP_FAILED)
+      {
+         RARCH_ERR("could not mmap() memory\n");
+         exit(1);
+      }
+   }
+
+   if (regOp->only_mmap == 0)
+   {
+      if (munmap(regOp->ptr, get_memory_size()) == -1)
+      {
+         RARCH_ERR("could not munmap() memory\n");
+         exit(1);
+      }
+
+      close(regOp->fd);
+   }
+
+   return;
+}
+
 static void fpga_gfx_create(fpga_t *fpga)
 {
    memset(&regOp, 0, sizeof(regOp));
 
-   regOp.Addr = XPAR_DDR_MEM_BASEADDR + MEM_OFFSET;
    regOp.only_mmap = 1;
-   regOp.mmap_size = STORAGE_SIZE;
 
    do_mmap_op(&regOp);
 
-   fpga->framebuffer = ((volatile unsigned*)regOp.ptr + regOp.page_offset);
+   fpga->framebuffer = ((volatile unsigned*)regOp.ptr);
 }
 
 static void *fpga_gfx_init(const video_info_t *video,
@@ -425,6 +402,7 @@ static void fpga_gfx_free(void *data)
 
    font_driver_free_osd();
    video_context_driver_free();
+
    free(fpga);
 
    regOp.only_mmap = 0;

@@ -30,9 +30,10 @@
 #include "../../dynamic.h"
 #include "../../verbosity.h"
 #include "../video_driver.h"
+#include "../common/fpga_common.h"
 
-static unsigned g_resize_width = 1920;
-static unsigned g_resize_height = 1080;
+static unsigned g_resize_width = FB_WIDTH;
+static unsigned g_resize_height = FB_HEIGHT;
 
 static void gfx_ctx_fpga_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, bool is_shutdown)
