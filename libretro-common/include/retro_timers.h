@@ -57,7 +57,12 @@
 #endif
 #include <retro_inline.h>
 
-#ifdef DJGPP
+#ifdef HUMAN68K
+#include <sys/time.h>
+#include <sys/unistd.h>
+#endif
+
+#if defined(DJGPP) || defined(HUMAN68K)
 #define timespec timeval
 #define tv_nsec tv_usec
 #include <unistd.h>

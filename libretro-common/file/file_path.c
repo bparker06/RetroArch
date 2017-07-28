@@ -728,8 +728,10 @@ void path_resolve_realpath(char *buf, size_t size)
     * Technically, PATH_MAX_LENGTH needn't be defined, but we rely on it anyways.
     * POSIX 2008 can automatically allocate for you,
     * but don't rely on that. */
+#ifndef HUMAN68K
    if (!realpath(tmp, buf))
       strlcpy(buf, tmp, size);
+#endif
 #endif
 #endif
 }
