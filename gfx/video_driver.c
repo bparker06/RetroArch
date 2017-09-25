@@ -302,11 +302,14 @@ static const video_driver_t *video_drivers[] = {
 #if defined(_WIN32) && !defined(_XBOX)
    &video_gdi,
 #endif
-#ifdef HAVE_CACA
-   &video_caca,
-#endif
 #ifdef DJGPP
    &video_vga,
+#endif
+#ifdef HAVE_SIXEL
+   &video_sixel,
+#endif
+#ifdef HAVE_CACA
+   &video_caca,
 #endif
    &video_null,
    NULL,

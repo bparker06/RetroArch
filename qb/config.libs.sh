@@ -225,6 +225,7 @@ fi
 
 check_pkgconf ALSA alsa
 check_lib CACA -lcaca
+check_lib SIXEL -lsixel
 check_header OSS sys/soundcard.h
 check_header OSS_BSD soundcard.h
 check_lib OSS_LIB -lossaudio
@@ -475,7 +476,7 @@ if [ "$HAVE_MATERIALUI" != 'no' ] || [ "$HAVE_XMB" != 'no' ] || [ "$HAVE_ZARCH" 
       HAVE_VULKAN=no
 		  echo "Notice: Hardware rendering context not available."
     else
-      if [ "$HAVE_CACA" = 'yes' ]; then
+      if [ "$HAVE_CACA" = 'yes' ] || [ "$HAVE_SIXEL" = 'yes' ]; then
 		    echo "Notice: Hardware rendering context not available."
       else
     		HAVE_MATERIALUI=no

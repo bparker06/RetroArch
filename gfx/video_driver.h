@@ -1287,6 +1287,7 @@ extern video_driver_t video_xshm;
 extern video_driver_t video_caca;
 extern video_driver_t video_gdi;
 extern video_driver_t video_vga;
+extern video_driver_t video_sixel;
 extern video_driver_t video_null;
 
 extern const gfx_ctx_driver_t gfx_ctx_osmesa;
@@ -1309,6 +1310,7 @@ extern const gfx_ctx_driver_t gfx_ctx_emscripten;
 extern const gfx_ctx_driver_t gfx_ctx_opendingux_fbdev;
 extern const gfx_ctx_driver_t gfx_ctx_khr_display;
 extern const gfx_ctx_driver_t gfx_ctx_gdi;
+extern const gfx_ctx_driver_t gfx_ctx_sixel;
 extern const gfx_ctx_driver_t gfx_ctx_null;
 
 

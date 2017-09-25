@@ -36,6 +36,7 @@ enum font_driver_render_api
    FONT_DRIVER_RENDER_WIIU,
    FONT_DRIVER_RENDER_VULKAN_API,
    FONT_DRIVER_RENDER_CACA,
+   FONT_DRIVER_RENDER_SIXEL,
    FONT_DRIVER_RENDER_GDI,
    FONT_DRIVER_RENDER_VGA
 };
@@ -185,6 +186,7 @@ extern font_renderer_t vulkan_raster_font;
 extern font_renderer_t caca_font;
 extern font_renderer_t gdi_font;
 extern font_renderer_t vga_font;
+extern font_renderer_t sixel_font;
 
 extern font_renderer_driver_t stb_font_renderer;
 extern font_renderer_driver_t stb_unicode_font_renderer;

@@ -25,50 +25,46 @@
 
 #include "../menu_driver.h"
 
-#if defined(_WIN32) && !defined(_XBOX)
-#include "../../gfx/common/win32_common.h"
-#endif
-
-static void *menu_display_gdi_get_default_mvp(void)
+static void *menu_display_sixel_get_default_mvp(void)
 {
    return NULL;
 }
 
-static void menu_display_gdi_blend_begin(void)
+static void menu_display_sixel_blend_begin(void)
 {
 }
 
-static void menu_display_gdi_blend_end(void)
+static void menu_display_sixel_blend_end(void)
 {
 }
 
-static void menu_display_gdi_draw(void *data)
-{
-   (void)data;
-}
-
-static void menu_display_gdi_draw_pipeline(void *data)
+static void menu_display_sixel_draw(void *data)
 {
    (void)data;
 }
 
-static void menu_display_gdi_viewport(void *data)
+static void menu_display_sixel_draw_pipeline(void *data)
 {
    (void)data;
 }
 
-static void menu_display_gdi_restore_clear_color(void)
+static void menu_display_sixel_viewport(void *data)
+{
+   (void)data;
+}
+
+static void menu_display_sixel_restore_clear_color(void)
 {
 }
 
-static void menu_display_gdi_clear_color(menu_display_ctx_clearcolor_t *clearcolor)
+static void menu_display_sixel_clear_color(menu_display_ctx_clearcolor_t *clearcolor)
 {
    (void)clearcolor;
 
-   menu_display_gdi_restore_clear_color();
+   menu_display_sixel_restore_clear_color();
 }
 
-static bool menu_display_gdi_font_init_first(
+static bool menu_display_sixel_font_init_first(
       void **font_handle, void *video_data,
       const char *font_path, float font_size,
       bool is_threaded)
@@ -77,34 +73,34 @@ static bool menu_display_gdi_font_init_first(
    *handle = font_driver_init_first(video_data,
          font_path, font_size, true,
          is_threaded,
-         FONT_DRIVER_RENDER_GDI);
+         FONT_DRIVER_RENDER_SIXEL);
    return *handle;
 }
 
-static const float *menu_display_gdi_get_default_vertices(void)
+static const float *menu_display_sixel_get_default_vertices(void)
 {
    static float dummy[16] = {0.0f};
    return &dummy[0];
 }
 
-static const float *menu_display_gdi_get_default_tex_coords(void)
+static const float *menu_display_sixel_get_default_tex_coords(void)
 {
    static float dummy[16] = {0.0f};
    return &dummy[0];
 }
 
-menu_display_ctx_driver_t menu_display_ctx_gdi = {
-   menu_display_gdi_draw,
-   menu_display_gdi_draw_pipeline,
-   menu_display_gdi_viewport,
-   menu_display_gdi_blend_begin,
-   menu_display_gdi_blend_end,
-   menu_display_gdi_restore_clear_color,
-   menu_display_gdi_clear_color,
-   menu_display_gdi_get_default_mvp,
-   menu_display_gdi_get_default_vertices,
-   menu_display_gdi_get_default_tex_coords,
-   menu_display_gdi_font_init_first,
-   MENU_VIDEO_DRIVER_GDI,
-   "menu_display_gdi",
+menu_display_ctx_driver_t menu_display_ctx_sixel = {
+   menu_display_sixel_draw,
+   menu_display_sixel_draw_pipeline,
+   menu_display_sixel_viewport,
+   menu_display_sixel_blend_begin,
+   menu_display_sixel_blend_end,
+   menu_display_sixel_restore_clear_color,
+   menu_display_sixel_clear_color,
+   menu_display_sixel_get_default_mvp,
+   menu_display_sixel_get_default_vertices,
+   menu_display_sixel_get_default_tex_coords,
+   menu_display_sixel_font_init_first,
+   MENU_VIDEO_DRIVER_SIXEL,
+   "menu_display_sixel",
 };
