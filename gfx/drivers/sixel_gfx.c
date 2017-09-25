@@ -361,7 +361,7 @@ static bool sixel_gfx_frame(void *data, const void *frame,
       frame_to_copy = sixel_temp_buf;
    }
 
-   if (draw)
+   if (draw && sixel->screen_width > 0 && sixel->screen_height > 0)
    {
       printf("\0338");
 
