@@ -51,6 +51,10 @@
 #include <sys/select.h>
 #endif
 
+#ifndef SIXEL_PIXELFORMAT_BGRA8888
+#error "Old version of libsixel detected, please upgrade to at least 1.6.0."
+#endif
+
 static unsigned char *sixel_menu_frame = NULL;
 static unsigned sixel_menu_width       = 0;
 static unsigned sixel_menu_height      = 0;
