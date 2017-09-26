@@ -42,11 +42,12 @@
 #include <termios.h>
 #endif
 
-#define HAVE_SYS_SELECT_H 1
+#define HAVE_SYS_SELECT_H
 
 #ifdef _WIN32
 #include <winsock2.h>
 #else
+#include <unistd.h>
 #include <sys/select.h>
 #endif
 
@@ -75,9 +76,6 @@ static SIXELSTATUS output_sixel(unsigned char *pixbuf, int width, int height,
    sixel_dither_t *dither;
    SIXELSTATUS status;
 
-#if USE_OSMESA
-   pixelformat = SIXEL_PIXELFORMAT_RGBA8888;
-#endif
    context = sixel_output_create(sixel_write, stdout);
    dither = sixel_dither_create(ncolors);
    status = sixel_dither_initialize(dither, pixbuf,
@@ -100,13 +98,13 @@ static SIXELSTATUS output_sixel(unsigned char *pixbuf, int width, int height,
 
 static int wait_stdin(int usec)
 {
-#if HAVE_SYS_SELECT_H
+#ifdef HAVE_SYS_SELECT_H
    fd_set rfds;
    struct timeval tv;
 #endif  /* HAVE_SYS_SELECT_H */
    int ret = 0;
 
-#if HAVE_SYS_SELECT_H
+#ifdef HAVE_SYS_SELECT_H
    tv.tv_sec = usec / 1000000;
    tv.tv_usec = usec % 1000000;
    FD_ZERO(&rfds);
@@ -121,10 +119,10 @@ static int wait_stdin(int usec)
 
 static void scroll_on_demand(int pixelheight)
 {
-#if HAVE_SYS_IOCTL_H
+#ifdef HAVE_SYS_IOCTL_H
    struct winsize size = {0, 0, 0, 0};
 #endif
-#if HAVE_TERMIOS_H
+#ifdef HAVE_TERMIOS_H
    struct termios old_termios;
    struct termios new_termios;
 #endif
@@ -133,14 +131,14 @@ static void scroll_on_demand(int pixelheight)
    int cellheight;
    int scroll;
 
-#if HAVE_SYS_IOCTL_H
+#ifdef HAVE_SYS_IOCTL_H
    ioctl(STDOUT_FILENO, TIOCGWINSZ, &size);
    if (size.ws_ypixel <= 0)
    {
       printf("\033[H\0337");
       return;
    }
-# if HAVE_TERMIOS_H
+# ifdef HAVE_TERMIOS_H
    /* set the terminal to cbreak mode */
    tcgetattr(STDIN_FILENO, &old_termios);
    memcpy(&new_termios, &old_termios, sizeof(old_termios));
@@ -185,6 +183,8 @@ static void *sixel_gfx_init(const video_info_t *video,
 {
    settings_t *settings                 = config_get_ptr();
    sixel_t *sixel                       = (sixel_t*)calloc(1, sizeof(*sixel));
+   gfx_ctx_input_t inp;
+   const gfx_ctx_driver_t *ctx_driver   = NULL;
 
    *input                               = NULL;
    *input_data                          = NULL;
@@ -199,6 +199,21 @@ static void *sixel_gfx_init(const video_info_t *video,
 
    sixel_gfx_create();
 
+   ctx_driver = video_context_driver_init_first(sixel,
+         settings->arrays.video_context_driver,
+         GFX_CTX_SIXEL_API, 1, 0, false);
+   if (!ctx_driver)
+      goto error;
+
+   video_context_driver_set((const gfx_ctx_driver_t*)ctx_driver);
+
+   RARCH_LOG("[SIXEL]: Found SIXEL context: %s\n", ctx_driver->ident);
+
+   inp.input      = input;
+   inp.input_data = input_data;
+
+   video_context_driver_input_driver(&inp);
+
    if (settings->bools.video_font_enable)
       font_driver_init_osd(sixel, false,
             video->is_threaded,
@@ -207,6 +222,12 @@ static void *sixel_gfx_init(const video_info_t *video,
    RARCH_LOG("[SIXEL]: Init complete.\n");
 
    return sixel;
+
+error:
+   video_context_driver_destroy();
+   if (sixel)
+      free(sixel);
+   return NULL;
 }
 
 static bool sixel_gfx_frame(void *data, const void *frame,

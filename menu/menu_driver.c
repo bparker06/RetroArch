@@ -234,16 +234,20 @@ static bool menu_display_check_compatibility(
          if (string_is_equal_fast(video_driver, "gx2", 3))
             return true;
          break;
-      case MENU_VIDEO_DRIVER_CACA:
-         if (string_is_equal_fast(video_driver, "caca", 4))
-            return true;
-         break;
       case MENU_VIDEO_DRIVER_GDI:
          if (string_is_equal_fast(video_driver, "gdi", 3))
             return true;
          break;
       case MENU_VIDEO_DRIVER_VGA:
          if (string_is_equal_fast(video_driver, "vga", 3))
+            return true;
+         break;
+      case MENU_VIDEO_DRIVER_SIXEL:
+         if (string_is_equal_fast(video_driver, "sixel", 5))
+            return true;
+         break;
+      case MENU_VIDEO_DRIVER_CACA:
+         if (string_is_equal_fast(video_driver, "caca", 4))
             return true;
          break;
    }

@@ -378,6 +378,9 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 #if defined(_WIN32) && !defined(_XBOX)
    &gfx_ctx_gdi,
 #endif
+#ifdef HAVE_SIXEL
+   &gfx_ctx_sixel,
+#endif
    &gfx_ctx_null,
    NULL
 };
