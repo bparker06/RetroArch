@@ -16,6 +16,7 @@
  */
 
 #include <retro_miscellaneous.h>
+#include <stdlib.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -64,6 +65,7 @@ static unsigned sixel_video_height     = 0;
 static unsigned sixel_video_pitch      = 0;
 static unsigned sixel_video_bits       = 0;
 static unsigned sixel_menu_bits        = 0;
+static double sixel_video_scale        = 1;
 static bool sixel_rgb32                = false;
 static bool sixel_menu_rgb32           = false;
 static unsigned *sixel_temp_buf        = NULL;
@@ -178,10 +180,6 @@ static void scroll_on_demand(int pixelheight)
 #endif  /* HAVE_SYS_IOCTL_H */
 }
 
-static void sixel_gfx_create(void)
-{
-}
-
 static void *sixel_gfx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
@@ -189,6 +187,7 @@ static void *sixel_gfx_init(const video_info_t *video,
    sixel_t *sixel                       = (sixel_t*)calloc(1, sizeof(*sixel));
    gfx_ctx_input_t inp;
    const gfx_ctx_driver_t *ctx_driver   = NULL;
+   const char *scale_str                = NULL;
 
    *input                               = NULL;
    *input_data                          = NULL;
@@ -201,11 +200,21 @@ static void *sixel_gfx_init(const video_info_t *video,
    else
       sixel_video_pitch = video->width * 2;
 
-   sixel_gfx_create();
+   scale_str = getenv("SIXEL_SCALE");
+
+   if (scale_str)
+   {
+      sixel_video_scale = atof(scale_str);
+
+      /* just in case the conversion fails, pick something sane */
+      if (!sixel_video_scale)
+         sixel_video_scale = 1.0;
+   }
 
    ctx_driver = video_context_driver_init_first(sixel,
          settings->arrays.video_context_driver,
          GFX_CTX_SIXEL_API, 1, 0, false);
+
    if (!ctx_driver)
       goto error;
 
@@ -261,8 +270,8 @@ static bool sixel_gfx_frame(void *data, const void *frame,
          sixel_video_width = frame_width;
          sixel_video_height = frame_height;
          sixel_video_pitch = pitch;
-         sixel->screen_width = sixel_video_width * 2;
-         sixel->screen_height = sixel_video_height * 2;
+         sixel->screen_width = sixel_video_width * sixel_video_scale;
+         sixel->screen_height = sixel_video_height * sixel_video_scale;
       }
    }
 
