@@ -6,14 +6,14 @@ matrix:
     - compiler: mingw-x86
       addons:
         apt:
-          sources:
+          packages:
             - g++-mingw-w64-i686
       script:
         - CROSS_COMPILE=i686-w64-mingw32- ./configure && make
     - compiler: mingw-x64
       addons:
         apt:
-          sources:
+          packages:
             - g++-mingw-w64-x86-64
       script:
         - CROSS_COMPILE=x86_64-w64-mingw32- ./configure && make
