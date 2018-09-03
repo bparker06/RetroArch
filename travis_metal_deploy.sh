@@ -4,13 +4,9 @@ mkdir -p ~/.ssh
 
 chmod 700 ~/.ssh
 
-echo "Copying SSH key..."
+openssl aes-256-cbc -K $encrypted_e9bb4da59666_key -iv $encrypted_e9bb4da59666_iv -in travis-deploy-key.enc -out ~/.ssh/id_rsa -d
 
-travis pubkey -r ${TRAVIS_REPO_SLUG} >>~/.ssh/authorized_keys
-
-echo "SSH Authorized Keys:"
-
-cat ~/.ssh/authorized_keys
+chmod 600 ~/.ssh/id_rsa
 
 cd ${TRAVIS_BUILD_DIR}/pkg/apple/build/Release
 
