@@ -1334,21 +1334,49 @@ void audio_driver_load_menu_sounds(void)
 {
    settings_t *settings = config_get_ptr();
    char *sounds_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   char *sounds_fallback_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    const char *path_ok = NULL;
    const char *path_cancel = NULL;
    const char *path_notice = NULL;
    const char *path_bgm = NULL;
    struct string_list *list = NULL;
+   struct string_list *list_fallback = NULL;
    int i = 0;
 
-   sounds_path[0] = '\0';
+   sounds_path[0] = sounds_fallback_path[0] = '\0';
+
+   fill_pathname_join(
+         sounds_fallback_path,
+         settings->paths.directory_assets,
+         "sounds",
+         PATH_MAX_LENGTH * sizeof(char)
+   );
 
    fill_pathname_application_special(sounds_path, PATH_MAX_LENGTH * sizeof(char), APPLICATION_SPECIAL_DIRECTORY_ASSETS_SOUNDS);
 
    list = dir_list_new(sounds_path, MENU_SOUND_FORMATS, false, false, false, false);
+   list_fallback = dir_list_new(sounds_fallback_path, MENU_SOUND_FORMATS, false, false, false, false);
+
+   if (!list)
+   {
+      list = list_fallback;
+      list_fallback = NULL;
+   }
 
    if (!list || list->size == 0)
       goto end;
+
+   if (list_fallback->size > 0)
+   {
+      for (i = 0; i < list_fallback->size; i++)
+      {
+         if (list->size == 0 || !string_list_find_elem(list, list_fallback->elems[i].data))
+         {
+            union string_list_elem_attr attr = {0};
+            string_list_append(list, list_fallback->elems[i].data, attr);
+         }
+      }
+   }
 
    for (i = 0; i < list->size; i++)
    {
@@ -1385,8 +1413,12 @@ void audio_driver_load_menu_sounds(void)
 end:
    if (list)
       string_list_free(list);
+   if (list_fallback)
+      string_list_free(list_fallback);
    if (sounds_path)
       free(sounds_path);
+   if (sounds_fallback_path)
+      free(sounds_fallback_path);
 }
 
 void audio_driver_mixer_play_stream(unsigned i)
