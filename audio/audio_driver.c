@@ -401,8 +401,12 @@ static bool audio_driver_deinit_internal(void)
 
 static void audio_driver_mixer_init(unsigned audio_out_rate)
 {
+   settings_t *settings = config_get_ptr();
+
    audio_mixer_init(audio_out_rate);
-   audio_driver_load_menu_sounds();
+
+   if (settings->bools.audio_enable_menu)
+      audio_driver_load_menu_sounds();
 }
 
 static bool audio_driver_init_internal(bool audio_cb_inited)
@@ -1369,13 +1373,13 @@ void audio_driver_load_menu_sounds(void)
       }
    }
 
-   if (path_ok)
+   if (path_ok && settings->bools.audio_enable_menu_ok)
       task_push_audio_mixer_load(path_ok, NULL, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_OK);
-   if (path_cancel)
+   if (path_cancel && settings->bools.audio_enable_menu_cancel)
       task_push_audio_mixer_load(path_cancel, NULL, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_CANCEL);
-   if (path_notice)
+   if (path_notice && settings->bools.audio_enable_menu_notice)
       task_push_audio_mixer_load(path_notice, NULL, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_NOTICE);
-   if (path_bgm)
+   if (path_bgm && settings->bools.audio_enable_menu_bgm)
       task_push_audio_mixer_load(path_bgm, audio_driver_load_menu_bgm_callback, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_BGM);
 
 end:
