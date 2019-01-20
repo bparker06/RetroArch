@@ -42,6 +42,8 @@ int action_cancel_pop_default(const char *path,
    (void)type;
    (void)idx;
 
+   audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_CANCEL);
+
    menu_entries_get_last_stack(NULL, &menu_label, NULL, &enum_idx, NULL);
 
    if (!string_is_empty(menu_label))

@@ -122,6 +122,7 @@ enum settings_list_type
    SETTINGS_LIST_MULTIMEDIA,
    SETTINGS_LIST_USER_INTERFACE,
    SETTINGS_LIST_POWER_MANAGEMENT,
+   SETTINGS_LIST_MENU_SOUNDS,
    SETTINGS_LIST_PLAYLIST,
    SETTINGS_LIST_CHEEVOS,
    SETTINGS_LIST_CORE_UPDATER,
@@ -4040,6 +4041,14 @@ static bool setting_append_list(
 
          CONFIG_ACTION(
                list, list_info,
+               MENU_ENUM_LABEL_MENU_SOUNDS,
+               MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+
+         CONFIG_ACTION(
+               list, list_info,
                MENU_ENUM_LABEL_INPUT_SETTINGS,
                MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
                &group_info,
@@ -6164,6 +6173,97 @@ static bool setting_append_list(
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
          break;
+      case SETTINGS_LIST_MENU_SOUNDS:
+         START_GROUP(list, list_info, &group_info,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_SOUNDS),
+               parent_group);
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_SETTINGS);
+
+         START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.audio_enable_menu,
+               MENU_ENUM_LABEL_AUDIO_ENABLE_MENU,
+               MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
+               audio_enable_menu,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.audio_enable_menu_ok,
+               MENU_ENUM_LABEL_MENU_SOUND_OK,
+               MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
+               audio_enable_menu_ok,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.audio_enable_menu_cancel,
+               MENU_ENUM_LABEL_MENU_SOUND_CANCEL,
+               MENU_ENUM_LABEL_VALUE_MENU_SOUND_CANCEL,
+               audio_enable_menu_cancel,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.audio_enable_menu_notice,
+               MENU_ENUM_LABEL_MENU_SOUND_NOTICE,
+               MENU_ENUM_LABEL_VALUE_MENU_SOUND_NOTICE,
+               audio_enable_menu_notice,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.audio_enable_menu_bgm,
+               MENU_ENUM_LABEL_MENU_SOUND_BGM,
+               MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
+               audio_enable_menu_bgm,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+
+         END_SUB_GROUP(list, list_info, parent_group);
+         END_GROUP(list, list_info, parent_group);
+         break;
       case SETTINGS_LIST_AUDIO:
          START_GROUP(list, list_info, &group_info,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS), parent_group);
@@ -6179,22 +6279,6 @@ static bool setting_append_list(
                MENU_ENUM_LABEL_AUDIO_ENABLE,
                MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
                audio_enable,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE
-               );
-
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.audio_enable_menu,
-               MENU_ENUM_LABEL_AUDIO_ENABLE_MENU,
-               MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
-               false,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -10992,6 +11076,7 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
       SETTINGS_LIST_MULTIMEDIA,
       SETTINGS_LIST_USER_INTERFACE,
       SETTINGS_LIST_POWER_MANAGEMENT,
+      SETTINGS_LIST_MENU_SOUNDS,
       SETTINGS_LIST_PLAYLIST,
       SETTINGS_LIST_CHEEVOS,
       SETTINGS_LIST_CORE_UPDATER,

@@ -25,6 +25,7 @@
 #include <file/file_path.h>
 #include <lists/dir_list.h>
 #include <string/stdstring.h>
+#include <streams/file_stream.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -35,6 +36,7 @@
 #include "../gfx/video_driver.h"
 #include "../record/record_driver.h"
 #include "../frontend/frontend_driver.h"
+#include "../tasks/tasks_internal.h"
 
 #include "../command.h"
 #include "../driver.h"
@@ -42,8 +44,11 @@
 #include "../retroarch.h"
 #include "../verbosity.h"
 #include "../list_special.h"
+#include "../file_path_special.h"
 
 #define AUDIO_BUFFER_FREE_SAMPLES_COUNT (8 * 1024)
+
+#define MENU_SOUND_FORMATS "ogg|mod|xm|s3m|mp3|flac"
 
 /**
  * db_to_gain:
@@ -189,6 +194,8 @@ static bool audio_suspended                              = false;
 static void audio_mixer_play_stop_sequential_cb(
       audio_mixer_sound_t *sound, unsigned reason);
 static void audio_mixer_play_stop_cb(
+      audio_mixer_sound_t *sound, unsigned reason);
+static void audio_mixer_menu_stop_cb(
       audio_mixer_sound_t *sound, unsigned reason);
 
 enum resampler_quality audio_driver_get_resampler_quality(void)
@@ -395,6 +402,7 @@ static bool audio_driver_deinit_internal(void)
 static void audio_driver_mixer_init(unsigned audio_out_rate)
 {
    audio_mixer_init(audio_out_rate);
+   audio_driver_load_menu_sounds();
 }
 
 static bool audio_driver_init_internal(bool audio_cb_inited)
@@ -753,9 +761,8 @@ void audio_driver_sample(int16_t left, int16_t right)
 void audio_driver_menu_sample(void)
 {
    static int16_t samples_buf[1024]       = {0};
-   struct retro_system_av_info   
-      *av_info                            = video_viewport_get_system_av_info();
-   const struct retro_system_timing *info = 
+   struct retro_system_av_info *av_info   = video_viewport_get_system_av_info();
+   const struct retro_system_timing *info =
       (const struct retro_system_timing*)&av_info->timing;
    unsigned sample_count                  = (info->sample_rate / info->fps) * 2;
    while (sample_count > 1024)
@@ -1095,6 +1102,28 @@ static void audio_mixer_play_stop_cb(
    }
 }
 
+static void audio_mixer_menu_stop_cb(
+      audio_mixer_sound_t *sound, unsigned reason)
+{
+   int idx = audio_mixer_find_index(sound);
+
+   switch (reason)
+   {
+      case AUDIO_MIXER_SOUND_FINISHED:
+         if (idx >= 0)
+         {
+            unsigned i = (unsigned)idx;
+            audio_mixer_streams[i].state   = AUDIO_STREAM_STATE_STOPPED;
+            audio_mixer_streams[i].volume  = 0.0f;
+         }
+         break;
+      case AUDIO_MIXER_SOUND_STOPPED:
+         break;
+      case AUDIO_MIXER_SOUND_REPEATED:
+         break;
+   }
+}
+
 static void audio_mixer_play_stop_sequential_cb(
       audio_mixer_sound_t *sound, unsigned reason)
 {
@@ -1245,7 +1274,7 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
 
    audio_mixer_active                     = true;
 
-   audio_mixer_streams[free_slot].name    = !string_is_empty(params->basename) ? strdup(params->basename) : NULL; 
+   audio_mixer_streams[free_slot].name    = !string_is_empty(params->basename) ? strdup(params->basename) : NULL;
    audio_mixer_streams[free_slot].buf     = buf;
    audio_mixer_streams[free_slot].handle  = handle;
    audio_mixer_streams[free_slot].voice   = voice;
@@ -1291,9 +1320,80 @@ static void audio_driver_mixer_play_stream_internal(unsigned i, unsigned type)
       audio_mixer_streams[i].state   = (enum audio_mixer_state)type;
 }
 
+static void audio_driver_load_menu_bgm_callback(void *task_data, void *user_data, const char *error)
+{
+   audio_mixer_streams[AUDIO_MIXER_SYSTEM_SLOT_BGM].stop_cb = audio_mixer_menu_stop_cb;
+   audio_driver_mixer_play_stream_internal(AUDIO_MIXER_SYSTEM_SLOT_BGM, AUDIO_STREAM_STATE_PLAYING_LOOPED);
+}
+
+void audio_driver_load_menu_sounds(void)
+{
+   settings_t *settings = config_get_ptr();
+   char *sounds_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   const char *path_ok = NULL;
+   const char *path_cancel = NULL;
+   const char *path_notice = NULL;
+   const char *path_bgm = NULL;
+   struct string_list *list = NULL;
+   int i = 0;
+
+   sounds_path[0] = '\0';
+
+   fill_pathname_application_special(sounds_path, PATH_MAX_LENGTH * sizeof(char), APPLICATION_SPECIAL_DIRECTORY_ASSETS_SOUNDS);
+
+   list = dir_list_new(sounds_path, MENU_SOUND_FORMATS, false, false, false, false);
+
+   if (!list || list->size == 0)
+      goto end;
+
+   for (i = 0; i < list->size; i++)
+   {
+      const char *path = list->elems[i].data;
+      const char *ext = path_get_extension(path);
+      char basename_noext[PATH_MAX_LENGTH];
+
+      basename_noext[0] = '\0';
+
+      fill_pathname_base_noext(basename_noext, path, sizeof(basename_noext));
+
+      if (audio_driver_mixer_extension_supported(ext))
+      {
+         if (string_is_equal_noncase(basename_noext, "ok"))
+            path_ok = path;
+         if (string_is_equal_noncase(basename_noext, "cancel"))
+            path_cancel = path;
+         if (string_is_equal_noncase(basename_noext, "notice"))
+            path_notice = path;
+         if (string_is_equal_noncase(basename_noext, "bgm"))
+            path_bgm = path;
+      }
+   }
+
+   if (path_ok)
+      task_push_audio_mixer_load(path_ok, NULL, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_OK);
+   if (path_cancel)
+      task_push_audio_mixer_load(path_cancel, NULL, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_CANCEL);
+   if (path_notice)
+      task_push_audio_mixer_load(path_notice, NULL, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_NOTICE);
+   if (path_bgm)
+      task_push_audio_mixer_load(path_bgm, audio_driver_load_menu_bgm_callback, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_BGM);
+
+end:
+   if (list)
+      string_list_free(list);
+   if (sounds_path)
+      free(sounds_path);
+}
+
 void audio_driver_mixer_play_stream(unsigned i)
 {
    audio_mixer_streams[i].stop_cb = audio_mixer_play_stop_cb;
+   audio_driver_mixer_play_stream_internal(i, AUDIO_STREAM_STATE_PLAYING);
+}
+
+void audio_driver_mixer_play_menu_sound(unsigned i)
+{
+   audio_mixer_streams[i].stop_cb = audio_mixer_menu_stop_cb;
    audio_driver_mixer_play_stream_internal(i, AUDIO_STREAM_STATE_PLAYING);
 }
 

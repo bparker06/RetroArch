@@ -208,6 +208,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_USER_INTERFACE_SETTINGS_LIST;
       case ACTION_OK_DL_POWER_MANAGEMENT_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_POWER_MANAGEMENT_SETTINGS_LIST;
+      case ACTION_OK_DL_MENU_SOUNDS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_MENU_SOUNDS_LIST;
       case ACTION_OK_DL_MENU_FILE_BROWSER_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_MENU_FILE_BROWSER_SETTINGS_LIST;
       case ACTION_OK_DL_RETRO_ACHIEVEMENTS_SETTINGS_LIST:
@@ -284,6 +286,8 @@ int generic_action_ok_displaylist_push(const char *path,
    settings_t            *settings         = config_get_ptr();
    file_list_t           *menu_stack       = menu_entries_get_menu_stack_ptr(0);
    char                  *menu_driver      = settings->arrays.menu_driver;
+
+   audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_OK);
 
    menu_displaylist_info_init(&info);
 
@@ -865,6 +869,7 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_QUICK_MENU_OVERRIDE_OPTIONS_LIST:
       case ACTION_OK_DL_USER_INTERFACE_SETTINGS_LIST:
       case ACTION_OK_DL_POWER_MANAGEMENT_SETTINGS_LIST:
+      case ACTION_OK_DL_MENU_SOUNDS_LIST:
       case ACTION_OK_DL_MENU_FILE_BROWSER_SETTINGS_LIST:
       case ACTION_OK_DL_RETRO_ACHIEVEMENTS_SETTINGS_LIST:
       case ACTION_OK_DL_UPDATER_SETTINGS_LIST:
@@ -1245,6 +1250,8 @@ static int set_path_generic(const char *label, const char *action_path)
 
 static int generic_action_ok_command(enum event_command cmd)
 {
+   audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_OK);
+
    if (!command_event(cmd, NULL))
       return menu_cbs_exit();
    return 0;
@@ -1317,6 +1324,8 @@ static int generic_action_ok(const char *path,
    const char            *menu_label = NULL;
    const char *flush_char            = NULL;
    menu_handle_t               *menu = NULL;
+
+   audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_OK);
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       goto error;
@@ -3927,6 +3936,7 @@ default_action_ok_func(action_ok_quick_menu_override_options, ACTION_OK_DL_QUICK
 default_action_ok_func(action_ok_menu_views_list, ACTION_OK_DL_MENU_VIEWS_SETTINGS_LIST)
 default_action_ok_func(action_ok_quick_menu_views_list, ACTION_OK_DL_QUICK_MENU_VIEWS_SETTINGS_LIST)
 default_action_ok_func(action_ok_power_management_list, ACTION_OK_DL_POWER_MANAGEMENT_SETTINGS_LIST)
+default_action_ok_func(action_ok_menu_sounds_list, ACTION_OK_DL_MENU_SOUNDS_LIST)
 default_action_ok_func(action_ok_user_interface_list, ACTION_OK_DL_USER_INTERFACE_SETTINGS_LIST)
 default_action_ok_func(action_ok_menu_file_browser_list, ACTION_OK_DL_MENU_FILE_BROWSER_SETTINGS_LIST)
 default_action_ok_func(action_ok_retro_achievements_list, ACTION_OK_DL_RETRO_ACHIEVEMENTS_SETTINGS_LIST)
@@ -5472,6 +5482,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS:
             BIND_ACTION_OK(cbs, action_ok_power_management_list);
+            break;
+         case MENU_ENUM_LABEL_MENU_SOUNDS:
+            BIND_ACTION_OK(cbs, action_ok_menu_sounds_list);
             break;
          case MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS:
             BIND_ACTION_OK(cbs, action_ok_menu_file_browser_list);
