@@ -1326,8 +1326,7 @@ static void audio_driver_mixer_play_stream_internal(unsigned i, unsigned type)
 
 static void audio_driver_load_menu_bgm_callback(void *task_data, void *user_data, const char *error)
 {
-   audio_mixer_streams[AUDIO_MIXER_SYSTEM_SLOT_BGM].stop_cb = audio_mixer_menu_stop_cb;
-   audio_driver_mixer_play_stream_internal(AUDIO_MIXER_SYSTEM_SLOT_BGM, AUDIO_STREAM_STATE_PLAYING_LOOPED);
+   audio_driver_mixer_play_menu_sound_looped(AUDIO_MIXER_SYSTEM_SLOT_BGM);
 }
 
 void audio_driver_load_menu_sounds(void)
@@ -1425,6 +1424,12 @@ void audio_driver_mixer_play_stream(unsigned i)
 {
    audio_mixer_streams[i].stop_cb = audio_mixer_play_stop_cb;
    audio_driver_mixer_play_stream_internal(i, AUDIO_STREAM_STATE_PLAYING);
+}
+
+void audio_driver_mixer_play_menu_sound_looped(unsigned i)
+{
+   audio_mixer_streams[i].stop_cb = audio_mixer_menu_stop_cb;
+   audio_driver_mixer_play_stream_internal(i, AUDIO_STREAM_STATE_PLAYING_LOOPED);
 }
 
 void audio_driver_mixer_play_menu_sound(unsigned i)

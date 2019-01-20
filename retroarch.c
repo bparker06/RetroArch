@@ -1458,6 +1458,7 @@ void rarch_menu_running(void)
    menu_driver_ctl(RARCH_MENU_CTL_SET_TOGGLE, NULL);
    /* Prevent stray input */
    input_driver_set_flushing_input();
+   audio_driver_mixer_play_menu_sound_looped(AUDIO_MIXER_SYSTEM_SLOT_BGM);
 #endif
 #ifdef HAVE_OVERLAY
    {
@@ -1474,6 +1475,7 @@ void rarch_menu_running_finished(void)
    menu_driver_ctl(RARCH_MENU_CTL_UNSET_TOGGLE, NULL);
    /* Prevent stray input */
    input_driver_set_flushing_input();
+   audio_driver_mixer_stop_stream(AUDIO_MIXER_SYSTEM_SLOT_BGM);
 #endif
    video_driver_set_texture_enable(false, false);
 #ifdef HAVE_OVERLAY

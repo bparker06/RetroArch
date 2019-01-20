@@ -326,6 +326,8 @@ void audio_driver_mixer_play_stream(unsigned i);
 
 void audio_driver_mixer_play_menu_sound(unsigned i);
 
+void audio_driver_mixer_play_menu_sound_looped(unsigned i);
+
 void audio_driver_mixer_play_stream_sequential(unsigned i);
 
 void audio_driver_mixer_play_stream_looped(unsigned i);
