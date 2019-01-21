@@ -1404,6 +1404,10 @@ bool retroarch_main_init(int argc, char *argv[])
       }
    }
 
+   if (recording_driver_lock_inited())
+      recording_driver_lock_free();
+   recording_driver_lock_init();
+
    command_event(CMD_EVENT_CHEATS_INIT, NULL);
    drivers_init(DRIVERS_CMD_ALL);
    command_event(CMD_EVENT_COMMAND_INIT, NULL);

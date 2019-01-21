@@ -318,6 +318,8 @@ void audio_mixer_init(unsigned rate)
       s_voices[i].type = AUDIO_MIXER_TYPE_NONE;
 
 #ifdef HAVE_THREADS
+   if (s_locker)
+      slock_free(s_locker);
    s_locker = slock_new();
 #endif
 }
@@ -801,6 +803,8 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound, bool repeat,
    slock_lock(s_locker);
 #endif
 
+   audio_resampler_lock();
+
    for (i = 0; i < AUDIO_MIXER_MAX_VOICES; i++, voice++)
    {
       if (voice->type != AUDIO_MIXER_TYPE_NONE)
@@ -849,6 +853,8 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound, bool repeat,
    else
       voice = NULL;
 
+   audio_resampler_unlock();
+
 #ifdef HAVE_THREADS
    slock_unlock(s_locker);
 #endif
@@ -863,12 +869,12 @@ void audio_mixer_stop(audio_mixer_voice_t* voice)
 
    if (voice)
    {
-      stop_cb = voice->stop_cb;
-      sound   = voice->sound;
-
 #ifdef HAVE_THREADS
       slock_lock(s_locker);
 #endif
+
+      stop_cb = voice->stop_cb;
+      sound   = voice->sound;
 
       voice->type = AUDIO_MIXER_TYPE_NONE;
 
@@ -971,7 +977,9 @@ again:
       info.ratio                = voice->types.ogg.ratio;
 
       if (voice->types.ogg.resampler)
+      {
         voice->types.ogg.resampler->process(voice->types.ogg.resampler_data, &info);
+      }
       else
         memcpy(voice->types.ogg.buffer, temp_buffer, temp_samples * sizeof(float));
       voice->types.ogg.position = 0;
@@ -1118,7 +1126,9 @@ again:
       info.ratio                = voice->types.flac.ratio;
 
       if (voice->types.flac.resampler)
+      {
         voice->types.flac.resampler->process(voice->types.flac.resampler_data, &info);
+      }
       else
         memcpy(voice->types.flac.buffer, temp_buffer, temp_samples * sizeof(float));
       voice->types.flac.position = 0;
@@ -1231,6 +1241,8 @@ void audio_mixer_mix(float* buffer, size_t num_frames, float volume_override, bo
    slock_lock(s_locker);
 #endif
 
+   audio_resampler_lock();
+
    for (i = 0; i < AUDIO_MIXER_MAX_VOICES; i++, voice++)
    {
       float volume = (override) ? volume_override : voice->volume;
@@ -1265,10 +1277,6 @@ void audio_mixer_mix(float* buffer, size_t num_frames, float volume_override, bo
       }
    }
 
-#ifdef HAVE_THREADS
-   slock_unlock(s_locker);
-#endif
-
    for (j = 0, sample = buffer; j < num_frames; j++, sample++)
    {
       if (*sample < -1.0f)
@@ -1276,6 +1284,12 @@ void audio_mixer_mix(float* buffer, size_t num_frames, float volume_override, bo
       else if (*sample > 1.0f)
          *sample = 1.0f;
    }
+
+   audio_resampler_unlock();
+
+#ifdef HAVE_THREADS
+   slock_unlock(s_locker);
+#endif
 }
 
 float audio_mixer_voice_get_volume(audio_mixer_voice_t *voice)
