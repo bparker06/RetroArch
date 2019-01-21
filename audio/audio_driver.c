@@ -45,6 +45,7 @@
 #include "../verbosity.h"
 #include "../list_special.h"
 #include "../file_path_special.h"
+#include "../content.h"
 
 #define AUDIO_BUFFER_FREE_SAMPLES_COUNT (8 * 1024)
 
@@ -1326,7 +1327,13 @@ static void audio_driver_mixer_play_stream_internal(unsigned i, unsigned type)
 
 static void audio_driver_load_menu_bgm_callback(void *task_data, void *user_data, const char *error)
 {
-   audio_driver_mixer_play_menu_sound_looped(AUDIO_MIXER_SYSTEM_SLOT_BGM);
+   bool contentless = false;
+   bool is_inited = false;
+
+   content_get_status(&contentless, &is_inited);
+
+   if (!is_inited)
+      audio_driver_mixer_play_menu_sound_looped(AUDIO_MIXER_SYSTEM_SLOT_BGM);
 }
 
 void audio_driver_load_menu_sounds(void)
