@@ -287,7 +287,8 @@ int generic_action_ok_displaylist_push(const char *path,
    file_list_t           *menu_stack       = menu_entries_get_menu_stack_ptr(0);
    char                  *menu_driver      = settings->arrays.menu_driver;
 
-   audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_OK);
+   if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_ok)
+      audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_OK);
 
    menu_displaylist_info_init(&info);
 
@@ -1250,7 +1251,8 @@ static int set_path_generic(const char *label, const char *action_path)
 
 static int generic_action_ok_command(enum event_command cmd)
 {
-   audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_OK);
+   if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_ok)
+      audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_OK);
 
    if (!command_event(cmd, NULL))
       return menu_cbs_exit();
@@ -1325,7 +1327,8 @@ static int generic_action_ok(const char *path,
    const char *flush_char            = NULL;
    menu_handle_t               *menu = NULL;
 
-   audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_OK);
+   if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_ok)
+      audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_OK);
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       goto error;
