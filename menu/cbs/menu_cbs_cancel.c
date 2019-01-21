@@ -18,6 +18,7 @@
 
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
+#include "../configuration.h"
 #include "../../msg_hash.h"
 #include "../../managers/cheat_manager.h"
 
@@ -36,6 +37,7 @@ int action_cancel_pop_default(const char *path,
    size_t new_selection_ptr;
    const char *menu_label       = NULL;
    enum msg_hash_enums enum_idx = MSG_UNKNOWN;
+   settings_t *settings         = config_get_ptr();
 
    (void)path;
    (void)label;

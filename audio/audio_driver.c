@@ -1419,8 +1419,8 @@ static void audio_driver_load_menu_bgm_callback(void *task_data, void *user_data
 void audio_driver_load_menu_sounds(void)
 {
    settings_t *settings = config_get_ptr();
-   char *sounds_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   char *sounds_fallback_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   char *sounds_path = NULL;
+   char *sounds_fallback_path = NULL;
    const char *path_ok = NULL;
    const char *path_cancel = NULL;
    const char *path_notice = NULL;
@@ -1428,7 +1428,13 @@ void audio_driver_load_menu_sounds(void)
    struct string_list *list = NULL;
    struct string_list *list_fallback = NULL;
    int i = 0;
+   static bool menu_sounds_loaded = false;
 
+   if (menu_sounds_loaded)
+      return;
+
+   sounds_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   sounds_fallback_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    sounds_path[0] = sounds_fallback_path[0] = '\0';
 
    fill_pathname_join(
@@ -1495,6 +1501,8 @@ void audio_driver_load_menu_sounds(void)
       task_push_audio_mixer_load(path_notice, NULL, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_NOTICE);
    if (path_bgm && settings->bools.audio_enable_menu_bgm)
       task_push_audio_mixer_load(path_bgm, audio_driver_load_menu_bgm_callback, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_BGM);
+
+   menu_sounds_loaded = true;
 
 end:
    if (list)
