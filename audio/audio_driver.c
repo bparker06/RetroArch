@@ -1458,7 +1458,7 @@ void audio_driver_load_menu_sounds(void)
    if (!list || list->size == 0)
       goto end;
 
-   if (list_fallback->size > 0)
+   if (list_fallback && list_fallback->size > 0)
    {
       for (i = 0; i < list_fallback->size; i++)
       {
