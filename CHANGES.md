@@ -18,6 +18,7 @@
 - LOCALIZATION: Update Spanish translation.
 - MENU: Only show CRT SwitchRes if video display server is implemented (Windows/Linux for now)
 - MENU: User Interface -> Appearance -> 'Menu Font Green/Blue Color' settings now work properly.
+- MENU: Add option to enable in-menu sound effects
 - MIDI: Add a Linux ALSA driver for MIDI.
 - NETPLAY: Force fast-save-states when netlay is enabled
 - NETPLAY: Allow quick joining subsystem lobbies
