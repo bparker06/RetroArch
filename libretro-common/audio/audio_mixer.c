@@ -638,6 +638,7 @@ static bool audio_mixer_play_mod(
       goto error;
    }
 
+   /* FIXME: stopping and then starting a mod stream will crash here in dispose_replay (ASAN says struct replay is misaligned?) */
    if (voice->types.mod.stream)
       dispose_replay(voice->types.mod.stream);
    if (voice->types.mod.buffer)
