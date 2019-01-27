@@ -1218,9 +1218,9 @@ static void audio_mixer_play_stop_sequential_cb(
                free(audio_mixer_streams[i].name);
 
             if (i < AUDIO_MIXER_MAX_STREAMS)
-               audio_mixer_streams[i].type    = AUDIO_STREAM_TYPE_USER;
+               audio_mixer_streams[i].stream_type = AUDIO_STREAM_TYPE_USER;
             else
-               audio_mixer_streams[i].type    = AUDIO_STREAM_TYPE_SYSTEM;
+               audio_mixer_streams[i].stream_type = AUDIO_STREAM_TYPE_SYSTEM;
 
             audio_mixer_streams[i].name    = NULL;
             audio_mixer_streams[i].state   = AUDIO_STREAM_STATE_NONE;
@@ -1356,7 +1356,8 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
    audio_mixer_streams[free_slot].buf     = buf;
    audio_mixer_streams[free_slot].handle  = handle;
    audio_mixer_streams[free_slot].voice   = voice;
-   audio_mixer_streams[free_slot].type    = params->stream_type;
+   audio_mixer_streams[free_slot].stream_type = params->stream_type;
+   audio_mixer_streams[free_slot].type    = params->type;
    audio_mixer_streams[free_slot].state   = params->state;
    audio_mixer_streams[free_slot].volume  = params->volume;
    audio_mixer_streams[free_slot].stop_cb = stop_cb;
