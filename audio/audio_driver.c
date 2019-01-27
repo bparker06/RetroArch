@@ -427,8 +427,6 @@ static bool audio_driver_deinit_internal(void)
 
 static void audio_driver_mixer_init(unsigned audio_out_rate)
 {
-   settings_t *settings = config_get_ptr();
-
    audio_mixer_init(audio_out_rate);
 }
 
