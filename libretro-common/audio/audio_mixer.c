@@ -188,7 +188,7 @@ struct audio_mixer_voice
    } types;
 };
 
-static struct audio_mixer_voice s_voices[AUDIO_MIXER_MAX_VOICES] = {0};
+static struct audio_mixer_voice s_voices[AUDIO_MIXER_MAX_VOICES] = {{0}};
 static unsigned s_rate = 0;
 
 #ifdef HAVE_THREADS
@@ -553,7 +553,8 @@ static bool audio_mixer_play_ogg(
 
    if (!ogg_buffer)
    {
-      resamp->free(resampler_data);
+      if (resamp && resampler_data)
+         resamp->free(resampler_data);
       goto error;
    }
 
@@ -763,7 +764,8 @@ static bool audio_mixer_play_mp3(
 
    if (!mp3_buffer)
    {
-      resamp->free(resampler_data);
+      if (resamp && resampler_data)
+         resamp->free(resampler_data);
       goto error;
    }
 
