@@ -430,9 +430,6 @@ static void audio_driver_mixer_init(unsigned audio_out_rate)
    settings_t *settings = config_get_ptr();
 
    audio_mixer_init(audio_out_rate);
-
-   if (settings->bools.audio_enable_menu)
-      audio_driver_load_menu_sounds();
 }
 
 static bool audio_driver_init_internal(bool audio_cb_inited)
@@ -1428,10 +1425,6 @@ void audio_driver_load_menu_sounds(void)
    struct string_list *list = NULL;
    struct string_list *list_fallback = NULL;
    int i = 0;
-   static bool menu_sounds_loaded = false;
-
-   if (menu_sounds_loaded)
-      return;
 
    sounds_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    sounds_fallback_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
@@ -1501,8 +1494,6 @@ void audio_driver_load_menu_sounds(void)
       task_push_audio_mixer_load(path_notice, NULL, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_NOTICE);
    if (path_bgm && settings->bools.audio_enable_menu_bgm)
       task_push_audio_mixer_load(path_bgm, audio_driver_load_menu_bgm_callback, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_BGM);
-
-   menu_sounds_loaded = true;
 
 end:
    if (list)

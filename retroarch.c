@@ -1438,6 +1438,15 @@ bool retroarch_main_init(int argc, char *argv[])
    }
 #endif
 
+#ifdef HAVE_MENU
+   {
+      settings_t *settings = config_get_ptr();
+
+      if (settings->bools.audio_enable_menu)
+         audio_driver_load_menu_sounds();
+   }
+#endif
+
    return true;
 
 error:
@@ -1458,36 +1467,42 @@ bool retroarch_is_on_main_thread(void)
 
 void rarch_menu_running(void)
 {
+   settings_t *settings                    = config_get_ptr();
+   (void)settings;
+
 #ifdef HAVE_MENU
    menu_driver_ctl(RARCH_MENU_CTL_SET_TOGGLE, NULL);
+
    /* Prevent stray input */
    input_driver_set_flushing_input();
-   audio_driver_mixer_play_menu_sound_looped(AUDIO_MIXER_SYSTEM_SLOT_BGM);
+
+   if (settings && settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_bgm)
+      audio_driver_mixer_play_menu_sound_looped(AUDIO_MIXER_SYSTEM_SLOT_BGM);
 #endif
 #ifdef HAVE_OVERLAY
-   {
-      settings_t *settings                    = config_get_ptr();
-      if (settings && settings->bools.input_overlay_hide_in_menu)
-         command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
-   }
+   if (settings && settings->bools.input_overlay_hide_in_menu)
+      command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
 #endif
 }
 
 void rarch_menu_running_finished(void)
 {
+   settings_t *settings                    = config_get_ptr();
+   (void)settings;
+
 #ifdef HAVE_MENU
    menu_driver_ctl(RARCH_MENU_CTL_UNSET_TOGGLE, NULL);
+
    /* Prevent stray input */
    input_driver_set_flushing_input();
-   audio_driver_mixer_stop_stream(AUDIO_MIXER_SYSTEM_SLOT_BGM);
+
+   if (settings && settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_bgm)
+      audio_driver_mixer_stop_stream(AUDIO_MIXER_SYSTEM_SLOT_BGM);
 #endif
    video_driver_set_texture_enable(false, false);
 #ifdef HAVE_OVERLAY
-   {
-      settings_t *settings                    = config_get_ptr();
-      if (settings && settings->bools.input_overlay_hide_in_menu)
-         command_event(CMD_EVENT_OVERLAY_INIT, NULL);
-   }
+   if (settings && settings->bools.input_overlay_hide_in_menu)
+      command_event(CMD_EVENT_OVERLAY_INIT, NULL);
 #endif
 }
 

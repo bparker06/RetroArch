@@ -3112,20 +3112,18 @@ void general_write_handler(rarch_setting_t *setting)
          break;
       case MENU_ENUM_LABEL_AUDIO_ENABLE_MENU:
          if (settings->bools.audio_enable_menu)
-         {
             audio_driver_load_menu_sounds();
-            audio_driver_mixer_stop_stream(AUDIO_MIXER_SYSTEM_SLOT_BGM);
-            if (settings->bools.audio_enable_menu_bgm)
-               audio_driver_mixer_play_menu_sound_looped(AUDIO_MIXER_SYSTEM_SLOT_BGM);
-         }
          else
             audio_driver_mixer_stop_stream(AUDIO_MIXER_SYSTEM_SLOT_BGM);
          break;
       case MENU_ENUM_LABEL_MENU_SOUND_BGM:
-         if (settings->bools.audio_enable_menu_bgm)
-            audio_driver_mixer_play_menu_sound_looped(AUDIO_MIXER_SYSTEM_SLOT_BGM);
-         else
-            audio_driver_mixer_stop_stream(AUDIO_MIXER_SYSTEM_SLOT_BGM);
+         if (settings->bools.audio_enable_menu)
+         {
+            if (settings->bools.audio_enable_menu_bgm)
+               audio_driver_mixer_play_menu_sound_looped(AUDIO_MIXER_SYSTEM_SLOT_BGM);
+            else
+               audio_driver_mixer_stop_stream(AUDIO_MIXER_SYSTEM_SLOT_BGM);
+         }
          break;
       case MENU_ENUM_LABEL_VIDEO_WINDOW_OPACITY:
          video_display_server_set_window_opacity(settings->uints.video_window_opacity);
