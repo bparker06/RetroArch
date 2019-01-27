@@ -559,12 +559,12 @@ static bool audio_mixer_play_ogg(
    }
 
    /* "system" menu sounds may reuse the same voice without freeing anything first, so do that here if needed */
-   if (voice->types.ogg.buffer)
-      memalign_free(voice->types.ogg.buffer);
    if (voice->types.ogg.stream)
       stb_vorbis_close(voice->types.ogg.stream);
    if (voice->types.ogg.resampler && voice->types.ogg.resampler_data)
       voice->types.ogg.resampler->free(voice->types.ogg.resampler_data);
+   if (voice->types.ogg.buffer)
+      memalign_free(voice->types.ogg.buffer);
 
    voice->types.ogg.resampler      = resamp;
    voice->types.ogg.resampler_data = resampler_data;
@@ -638,10 +638,10 @@ static bool audio_mixer_play_mod(
       goto error;
    }
 
-   if (voice->types.mod.buffer)
-      memalign_free(voice->types.mod.buffer);
    if (voice->types.mod.stream)
       dispose_replay(voice->types.mod.stream);
+   if (voice->types.mod.buffer)
+      memalign_free(voice->types.mod.buffer);
 
    voice->types.mod.buffer         = (int*)mod_buffer;
    voice->types.mod.buf_samples    = buf_samples;
@@ -699,12 +699,12 @@ static bool audio_mixer_play_flac(
       goto error;
    }
 
-   if (voice->types.flac.buffer)
-      memalign_free(voice->types.flac.buffer);
    if (voice->types.flac.stream)
       drflac_close(voice->types.flac.stream);
    if (voice->types.flac.resampler && voice->types.flac.resampler_data)
       voice->types.flac.resampler->free(voice->types.flac.resampler_data);
+   if (voice->types.flac.buffer)
+      memalign_free(voice->types.flac.buffer);
 
    voice->types.flac.resampler      = resamp;
    voice->types.flac.resampler_data = resampler_data;
@@ -770,10 +770,10 @@ static bool audio_mixer_play_mp3(
    }
 
    /* "system" menu sounds may reuse the same voice without freeing anything first, so do that here if needed */
-   if (voice->types.mp3.buffer)
-      memalign_free(voice->types.mp3.buffer);
    if (voice->types.mp3.resampler && voice->types.mp3.resampler_data)
       voice->types.mp3.resampler->free(voice->types.mp3.resampler_data);
+   if (voice->types.mp3.buffer)
+      memalign_free(voice->types.mp3.buffer);
 
    voice->types.mp3.resampler      = resamp;
    voice->types.mp3.resampler_data = resampler_data;
