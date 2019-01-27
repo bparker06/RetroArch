@@ -20,6 +20,8 @@
 
 #include "../widgets/menu_dialog.h"
 
+#include "../../configuration.h"
+
 #ifndef BIND_ACTION_INFO
 #define BIND_ACTION_INFO(cbs, name) \
    cbs->action_info = name; \
@@ -79,8 +81,13 @@ static int action_info_cheevos(unsigned type, const char *label)
 int menu_cbs_init_bind_info(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx)
 {
+   settings_t *settings = config_get_ptr();
+
    if (!cbs)
       return -1;
+
+   if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_notice)
+      audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_NOTICE);
 
 #ifdef HAVE_CHEEVOS
    if ((type >= MENU_SETTINGS_CHEEVOS_START) &&
