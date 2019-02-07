@@ -403,7 +403,7 @@ static void gl1_raster_font_setup_viewport(unsigned width, unsigned height,
 
    glEnable(GL_BLEND);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-   glBlendEquation(GL_FUNC_ADD);
+   /*glBlendEquation(GL_FUNC_ADD);*/
 
    glBindTexture(GL_TEXTURE_2D, font->tex);
 
