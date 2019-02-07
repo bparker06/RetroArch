@@ -1246,6 +1246,7 @@ bool video_driver_get_all_flags(gfx_ctx_flags_t *flags,
       enum display_flags flag);
 
 extern video_driver_t video_gl;
+extern video_driver_t video_gl1;
 extern video_driver_t video_vulkan;
 extern video_driver_t video_metal;
 extern video_driver_t video_psp1;

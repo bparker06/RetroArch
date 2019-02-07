@@ -359,6 +359,7 @@ enum menu_display_driver_type
 {
    MENU_VIDEO_DRIVER_GENERIC = 0,
    MENU_VIDEO_DRIVER_OPENGL,
+   MENU_VIDEO_DRIVER_OPENGL1,
    MENU_VIDEO_DRIVER_VULKAN,
    MENU_VIDEO_DRIVER_METAL,
    MENU_VIDEO_DRIVER_DIRECT3D8,
@@ -896,6 +897,7 @@ void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_
 extern uintptr_t menu_display_white_texture;
 
 extern menu_display_ctx_driver_t menu_display_ctx_gl;
+extern menu_display_ctx_driver_t menu_display_ctx_gl1;
 extern menu_display_ctx_driver_t menu_display_ctx_vulkan;
 extern menu_display_ctx_driver_t menu_display_ctx_metal;
 extern menu_display_ctx_driver_t menu_display_ctx_d3d8;

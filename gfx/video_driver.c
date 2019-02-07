@@ -262,6 +262,7 @@ struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
 static const video_driver_t *video_drivers[] = {
 #ifdef HAVE_OPENGL
    &video_gl,
+   &video_gl1,
 #endif
 #ifdef HAVE_VULKAN
    &video_vulkan,
