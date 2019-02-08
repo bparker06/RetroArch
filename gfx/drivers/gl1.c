@@ -223,10 +223,10 @@ static void *gl1_gfx_init(const video_info_t *video,
 
    video_context_driver_input_driver(&inp);
 
-   if (settings->bools.video_font_enable)
+   /*if (settings->bools.video_font_enable)
       font_driver_init_osd(gl1, false,
             video->is_threaded,
-            FONT_DRIVER_RENDER_OPENGL1_API);
+            FONT_DRIVER_RENDER_OPENGL1_API);*/
 
    vendor   = (const char*)glGetString(GL_VENDOR);
    renderer = (const char*)glGetString(GL_RENDERER);
@@ -248,7 +248,7 @@ static void *gl1_gfx_init(const video_info_t *video,
    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
    glGenTextures(1, &gl1->tex);
 
-   hwr = video_driver_get_hw_context();
+   /*hwr = video_driver_get_hw_context();
 
    memcpy(gl1->tex_info.coord, gl1_tex_coords, sizeof(gl1->tex_info.coord));
    gl1->vertex_ptr        = hwr->bottom_left_origin
@@ -259,7 +259,7 @@ static void *gl1_gfx_init(const video_info_t *video,
    gl1->coords.tex_coord      = gl1->tex_info.coord;
    gl1->coords.color          = gl1->white_color_ptr;
    gl1->coords.lut_tex_coord  = gl1_tex_coords;
-   gl1->coords.vertices       = 4;
+   gl1->coords.vertices       = 4;*/
 
    RARCH_LOG("[GL1]: Init complete.\n");
 
@@ -563,7 +563,8 @@ static bool gl1_gfx_frame(void *data, const void *frame,
       glBindTexture(GL_TEXTURE_2D, gl1->tex);
 
       /* TODO: We could implement red/blue swap if client GL does not support BGRA... but even MS GDI Generic supports it */
-      glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, tex_width, height, 0, format, type, frame_to_copy);
+      glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, pot_width, pot_height, 0, format, type, NULL);
+      glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, tex_width, height, format, type, frame_to_copy);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -593,6 +594,14 @@ static bool gl1_gfx_frame(void *data, const void *frame,
          float norm_width = (1.0f / (float)pot_width) * (float)tex_width;
          float norm_height = (1.0f / (float)pot_height) * (float)height;
 
+         /* remove extra POT padding */
+         tex_mirror_BR[0] = norm_width;
+         tex_mirror_TR[0] = norm_width;
+
+         /* normally this would be 1.0 - height, but we're drawing upside-down */
+         tex_mirror_BL[1] = norm_height;
+         tex_mirror_BR[1] = norm_height;
+
          glTexCoord2f(tex_mirror_BL[0], tex_mirror_BL[1]);
          glVertex2f(-1.0f, -1.0f);
 
@@ -614,8 +623,8 @@ static bool gl1_gfx_frame(void *data, const void *frame,
       glPopMatrix();
    }
 
-   if (msg)
-      font_driver_render_msg(video_info, NULL, msg, NULL);
+   /*if (msg)
+      font_driver_render_msg(video_info, NULL, msg, NULL);*/
 
    video_info->cb_update_window_title(
          video_info->context_data, video_info);
