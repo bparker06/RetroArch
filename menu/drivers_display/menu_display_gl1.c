@@ -50,7 +50,7 @@ static const float *menu_display_gl1_get_default_tex_coords(void)
    return &gl1_tex_coords[0];
 }
 
-static GLenum menu_display_prim_to_gl1_enum(
+/*static GLenum menu_display_prim_to_gl1_enum(
       enum menu_display_prim_type type)
 {
    switch (type)
@@ -65,7 +65,7 @@ static GLenum menu_display_prim_to_gl1_enum(
    }
 
    return 0;
-}
+}*/
 
 static void menu_display_gl1_blend_begin(video_frame_info_t *video_info)
 {
