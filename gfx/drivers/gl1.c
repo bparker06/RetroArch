@@ -636,10 +636,24 @@ static bool gl1_gfx_frame(void *data, const void *frame,
    return true;
 }
 
-static void gl1_gfx_set_nonblock_state(void *data, bool toggle)
+static void gl1_gfx_set_nonblock_state(void *data, bool state)
 {
-   (void)data;
-   (void)toggle;
+   int interval                = 0;
+   gl1_t             *gl1      = (gl1_t*)data;
+   settings_t        *settings = config_get_ptr();
+
+   if (!gl1)
+      return;
+
+   RARCH_LOG("[GL1]: VSync => %s\n", state ? "off" : "on");
+
+   gl1_context_bind_hw_render(gl1, false);
+
+   if (!state)
+      interval = settings->uints.video_swap_interval;
+
+   video_context_driver_swap_interval(&interval);
+   gl1_context_bind_hw_render(gl1, true);
 }
 
 static bool gl1_gfx_alive(void *data)
