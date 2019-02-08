@@ -26,14 +26,14 @@
 
 #include "../menu_driver.h"
 
-static const GLfloat gl1_vertexes[] = {
+static const GLfloat gl1_menu_vertexes[] = {
    0, 0,
    1, 0,
    0, 1,
    1, 1
 };
 
-static const GLfloat gl1_tex_coords[] = {
+static const GLfloat gl1_menu_tex_coords[] = {
    0, 1,
    1, 1,
    0, 0,
@@ -42,12 +42,12 @@ static const GLfloat gl1_tex_coords[] = {
 
 static const float *menu_display_gl1_get_default_vertices(void)
 {
-   return &gl1_vertexes[0];
+   return &gl1_menu_vertexes[0];
 }
 
 static const float *menu_display_gl1_get_default_tex_coords(void)
 {
-   return &gl1_tex_coords[0];
+   return &gl1_menu_tex_coords[0];
 }
 
 static void *menu_display_gl1_get_default_mvp(video_frame_info_t *video_info)
