@@ -63,6 +63,7 @@ typedef struct gl1
    struct video_tex_info tex_info;
    const float *vertex_ptr;
    const float *white_color_ptr;
+   unsigned rotation;
 } gl1_t;
 
 typedef struct gl1_texture

@@ -50,7 +50,17 @@ static const float *menu_display_gl1_get_default_tex_coords(void)
    return &gl1_tex_coords[0];
 }
 
-/*static GLenum menu_display_prim_to_gl1_enum(
+static void *menu_display_gl1_get_default_mvp(video_frame_info_t *video_info)
+{
+   gl1_t *gl1 = video_info ? (gl1_t*)video_info->userdata : NULL;
+
+   if (!gl1)
+      return NULL;
+
+   return &gl1->mvp_no_rot;
+}
+
+static GLenum menu_display_prim_to_gl1_enum(
       enum menu_display_prim_type type)
 {
    switch (type)
@@ -65,7 +75,7 @@ static const float *menu_display_gl1_get_default_tex_coords(void)
    }
 
    return 0;
-}*/
+}
 
 static void menu_display_gl1_blend_begin(video_frame_info_t *video_info)
 {
@@ -88,6 +98,8 @@ static void menu_display_gl1_viewport(menu_display_ctx_draw_t *draw,
 static void menu_display_gl1_draw(menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
+   video_shader_ctx_mvp_t mvp;
+   video_shader_ctx_coords_t coords;
    gl1_t             *gl1          = video_info ?
       (gl1_t*)video_info->userdata : NULL;
 
@@ -102,26 +114,55 @@ static void menu_display_gl1_draw(menu_display_ctx_draw_t *draw,
       draw->coords->lut_tex_coord = menu_display_gl1_get_default_tex_coords();
 
    menu_display_gl1_viewport(draw, video_info);
-/*
+
+   glEnable(GL_TEXTURE_2D);
    glBindTexture(GL_TEXTURE_2D, (GLuint)draw->texture);
 
+   coords.handle_data = gl1;
+   coords.data        = draw->coords;
+
+   video_driver_set_coords(&coords);
+
+   mvp.data   = gl1;
+   mvp.matrix = draw->matrix_data ? (math_matrix_4x4*)draw->matrix_data
+      : (math_matrix_4x4*)menu_display_gl1_get_default_mvp(video_info);
+
+   video_driver_set_mvp(&mvp);
+
+   glMatrixMode(GL_PROJECTION);
+   glPushMatrix();
+   glLoadMatrixf(((math_matrix_4x4*)mvp.matrix)->data);
+
+   glMatrixMode(GL_MODELVIEW);
+   glPushMatrix();
+   glLoadIdentity();
+
+   glEnableClientState(GL_COLOR_ARRAY);
    glEnableClientState(GL_VERTEX_ARRAY);
    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 
-   glVertexPointer(3, GL_FLOAT, 0, draw->coords->vertex);
-   glTexCoordPointer(3, GL_FLOAT, 0, draw->coords->tex_coord);
+   glColorPointer(4, GL_FLOAT, 0, draw->coords->color);
+   glVertexPointer(2, GL_FLOAT, 0, draw->coords->vertex);
+   glTexCoordPointer(2, GL_FLOAT, 0, draw->coords->tex_coord);
 
    glDrawArrays(menu_display_prim_to_gl1_enum(
             draw->prim_type), 0, draw->coords->vertices);
 
+   glDisableClientState(GL_COLOR_ARRAY);
    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
    glDisableClientState(GL_VERTEX_ARRAY);
-*/
+
+   glMatrixMode(GL_MODELVIEW);
+   glPopMatrix();
+   glMatrixMode(GL_PROJECTION);
+   glPopMatrix();
+
+   gl1->coords.color = gl1->white_color_ptr;
 }
 
 static void menu_display_gl1_restore_clear_color(void)
 {
-   glClearColor(0.0f, 0.0f, 0.0f, 0.00f);
+   glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 }
 
 static void menu_display_gl1_clear_color(
@@ -141,11 +182,11 @@ static bool menu_display_gl1_font_init_first(
       const char *font_path, float menu_font_size,
       bool is_threaded)
 {
-   /*font_data_t **handle = (font_data_t**)font_handle;
+   font_data_t **handle = (font_data_t**)font_handle;
    if (!(*handle = font_driver_init_first(video_data,
          font_path, menu_font_size, true,
          is_threaded,
-         FONT_DRIVER_RENDER_OPENGL1_API)))*/
+         FONT_DRIVER_RENDER_OPENGL1_API)))
        return false;
    return true;
 }
@@ -170,7 +211,7 @@ menu_display_ctx_driver_t menu_display_ctx_gl1 = {
    menu_display_gl1_blend_end,
    menu_display_gl1_restore_clear_color,
    menu_display_gl1_clear_color,
-   NULL,
+   menu_display_gl1_get_default_mvp,
    menu_display_gl1_get_default_vertices,
    menu_display_gl1_get_default_tex_coords,
    menu_display_gl1_font_init_first,

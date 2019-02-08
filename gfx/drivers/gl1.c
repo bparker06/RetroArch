@@ -60,6 +60,8 @@ static unsigned char *gl1_video_buf  = NULL;
 
 static bool gl1_shared_context_use = false;
 
+static struct video_ortho gl1_default_ortho = {0, 1, 0, 1, -1, 1};
+
 /* Used for the last pass when rendering to the back buffer. */
 static const GLfloat gl1_vertexes_flipped[] = {
    0, 1,
@@ -223,10 +225,10 @@ static void *gl1_gfx_init(const video_info_t *video,
 
    video_context_driver_input_driver(&inp);
 
-   /*if (settings->bools.video_font_enable)
+   if (settings->bools.video_font_enable)
       font_driver_init_osd(gl1, false,
             video->is_threaded,
-            FONT_DRIVER_RENDER_OPENGL1_API);*/
+            FONT_DRIVER_RENDER_OPENGL1_API);
 
    vendor   = (const char*)glGetString(GL_VENDOR);
    renderer = (const char*)glGetString(GL_RENDERER);
@@ -248,7 +250,7 @@ static void *gl1_gfx_init(const video_info_t *video,
    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
    glGenTextures(1, &gl1->tex);
 
-   /*hwr = video_driver_get_hw_context();
+   hwr = video_driver_get_hw_context();
 
    memcpy(gl1->tex_info.coord, gl1_tex_coords, sizeof(gl1->tex_info.coord));
    gl1->vertex_ptr        = hwr->bottom_left_origin
@@ -259,7 +261,7 @@ static void *gl1_gfx_init(const video_info_t *video,
    gl1->coords.tex_coord      = gl1->tex_info.coord;
    gl1->coords.color          = gl1->white_color_ptr;
    gl1->coords.lut_tex_coord  = gl1_tex_coords;
-   gl1->coords.vertices       = 4;*/
+   gl1->coords.vertices       = 4;
 
    RARCH_LOG("[GL1]: Init complete.\n");
 
@@ -274,6 +276,25 @@ error:
       free(gl1);
    }
    return NULL;
+}
+
+static void gl1_set_projection(gl1_t *gl1,
+      struct video_ortho *ortho, bool allow_rotate)
+{
+   math_matrix_4x4 rot;
+
+   /* Calculate projection. */
+   matrix_4x4_ortho(gl1->mvp_no_rot, ortho->left, ortho->right,
+         ortho->bottom, ortho->top, ortho->znear, ortho->zfar);
+
+   if (!allow_rotate)
+   {
+      gl1->mvp = gl1->mvp_no_rot;
+      return;
+   }
+
+   matrix_4x4_rotate_z(rot, M_PI * gl1->rotation / 180.0f);
+   matrix_4x4_multiply(gl1->mvp, rot, gl1->mvp_no_rot);
 }
 
 void gl1_gfx_set_viewport(gl1_t *gl1,
@@ -360,7 +381,7 @@ void gl1_gfx_set_viewport(gl1_t *gl1,
 #endif
 
    glViewport(gl1->vp.x, gl1->vp.y, gl1->vp.width, gl1->vp.height);
-   /*gl_set_projection(gl, &default_ortho, allow_rotate);*/
+   gl1_set_projection(gl1, &gl1_default_ortho, allow_rotate);
 
    /* Set last backbuffer viewport. */
    if (!force_full)
@@ -549,7 +570,7 @@ static bool gl1_gfx_frame(void *data, const void *frame,
       GLenum format = (gl1->supports_bgra ? GL_BGRA_EXT : GL_RGBA);
       GLenum type = GL_UNSIGNED_BYTE;
 
-      glDisable(GL_BLEND);
+      /*glDisable(GL_BLEND);*/
       glDisable(GL_DEPTH_TEST);
       glDisable(GL_STENCIL_TEST);
       glDisable(GL_SCISSOR_TEST);
@@ -573,10 +594,26 @@ static bool gl1_gfx_frame(void *data, const void *frame,
       glMatrixMode(GL_PROJECTION);
       glPushMatrix();
       glLoadIdentity();
+      /*glLoadMatrixf(gl1->mvp.data);*/
 
       glMatrixMode(GL_MODELVIEW);
       glPushMatrix();
       glLoadIdentity();
+
+      /*glEnableClientState(GL_COLOR_ARRAY);
+      glEnableClientState(GL_VERTEX_ARRAY);
+      glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+
+      glColorPointer(4, GL_FLOAT, 0, gl1->coords.color);
+      glVertexPointer(2, GL_FLOAT, 0, gl1->coords.vertex);
+      glTexCoordPointer(2, GL_FLOAT, 0, gl1->coords.tex_coord);
+
+      glDrawArrays(GL_TRIANGLES, 0, gl1->coords.vertices);
+
+      glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+      glDisableClientState(GL_VERTEX_ARRAY);
+      glDisableClientState(GL_COLOR_ARRAY);*/
+
 
       glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 
@@ -623,8 +660,8 @@ static bool gl1_gfx_frame(void *data, const void *frame,
       glPopMatrix();
    }
 
-   /*if (msg)
-      font_driver_render_msg(video_info, NULL, msg, NULL);*/
+   if (msg)
+      font_driver_render_msg(video_info, NULL, msg, NULL);
 
    video_info->cb_update_window_title(
          video_info->context_data, video_info);
@@ -753,8 +790,13 @@ static bool gl1_gfx_set_shader(void *data,
 static void gl1_gfx_set_rotation(void *data,
       unsigned rotation)
 {
-   (void)data;
-   (void)rotation;
+   gl1_t *gl1 = (gl1_t*)data;
+
+   if (!gl1)
+      return;
+
+   gl1->rotation = 90 * rotation;
+   gl1_set_projection(gl1, &gl1_default_ortho, true);
 }
 
 static void gl1_gfx_viewport_info(void *data,

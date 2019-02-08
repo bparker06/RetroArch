@@ -173,6 +173,8 @@ static void *gl1_raster_font_init_font(void *data,
       return NULL;
    }
 
+   RARCH_LOG("[Font]: Using font driver GL1\n");
+
    if (is_threaded)
       video_context_driver_make_current(false);
 
@@ -189,6 +191,7 @@ static void *gl1_raster_font_init_font(void *data,
 
    font->atlas->dirty = false;
 
+   glEnable(GL_TEXTURE_2D);
    glBindTexture(GL_TEXTURE_2D, font->gl->texture[font->gl->tex_index]);
 
    return font;
@@ -250,12 +253,32 @@ static void gl1_raster_font_draw_vertices(gl1_raster_t *font,
    /*video_info->cb_set_mvp(font->gl,
          video_info->shader_data, &font->gl->mvp_no_rot);*/
 
+   glMatrixMode(GL_PROJECTION);
+   glPushMatrix();
+   glLoadMatrixf(font->gl->mvp.data);
+
+   glMatrixMode(GL_MODELVIEW);
+   glPushMatrix();
+   glLoadIdentity();
+
+   glEnableClientState(GL_COLOR_ARRAY);
    glEnableClientState(GL_VERTEX_ARRAY);
-   glVertexPointer(3, GL_FLOAT, 0, coords->vertex);
+   glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+
+   glColorPointer(4, GL_FLOAT, 0, coords->color);
+   glVertexPointer(2, GL_FLOAT, 0, coords->vertex);
+   glTexCoordPointer(2, GL_FLOAT, 0, coords->tex_coord);
 
    glDrawArrays(GL_TRIANGLES, 0, coords->vertices);
 
+   glDisableClientState(GL_COLOR_ARRAY);
+   glDisableClientState(GL_TEXTURE_COORD_ARRAY);
    glDisableClientState(GL_VERTEX_ARRAY);
+
+   glMatrixMode(GL_MODELVIEW);
+   glPopMatrix();
+   glMatrixMode(GL_PROJECTION);
+   glPopMatrix();
 }
 
 static void gl1_raster_font_render_line(
@@ -313,17 +336,6 @@ static void gl1_raster_font_render_line(
          tex_y  = glyph->atlas_offset_y;
          width  = glyph->width;
          height = glyph->height;
-
-         font_vertex[     2 * (6 * i + 0) + 0] = (x + (delta_x + off_x + 0 * width) * scale) * inv_win_width;
-         font_vertex[     2 * (6 * i + 0) + 1] = (y + (delta_y - off_y - 1 * height) * scale) * inv_win_height;
-         font_tex_coords[ 2 * (6 * i + 0) + 0] = (tex_x + 0 * width) * inv_tex_size_x;
-         font_tex_coords[ 2 * (6 * i + 0) + 1] = (tex_y + 1 * height) * inv_tex_size_y;
-         font_color[      4 * (6 * i + 0) + 0] = color[0];
-         font_color[      4 * (6 * i + 0) + 1] = color[1];
-         font_color[      4 * (6 * i + 0) + 2] = color[2];
-         font_color[      4 * (6 * i + 0) + 3] = color[3];
-         font_lut_tex_coord[    2 * (6 * i + 0) + 0] = gl->coords.lut_tex_coord[0];
-         font_lut_tex_coord[    2 * (6 * i + 0) + 1] = gl->coords.lut_tex_coord[1];
 
          gl1_raster_font_emit(0, 0, 1); /* Bottom-left */
          gl1_raster_font_emit(1, 1, 1); /* Bottom-right */
@@ -405,6 +417,7 @@ static void gl1_raster_font_setup_viewport(unsigned width, unsigned height,
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
    /*glBlendEquation(GL_FUNC_ADD);*/
 
+   glEnable(GL_TEXTURE_2D);
    glBindTexture(GL_TEXTURE_2D, font->tex);
 
    /*shader_info.data       = NULL;
@@ -503,6 +516,7 @@ static void gl1_raster_font_render_msg(
    if (!font->block && font->gl)
    {
       /* restore viewport */
+      glEnable(GL_TEXTURE_2D);
       glBindTexture(GL_TEXTURE_2D, font->gl->texture[font->gl->tex_index]);
 
       glDisable(GL_BLEND);
@@ -538,6 +552,7 @@ static void gl1_raster_font_flush_block(unsigned width, unsigned height,
    if (font->gl)
    {
       /* restore viewport */
+      glEnable(GL_TEXTURE_2D);
       glBindTexture(GL_TEXTURE_2D, font->gl->texture[font->gl->tex_index]);
 
       glDisable(GL_BLEND);
